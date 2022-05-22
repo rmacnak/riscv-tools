@@ -660,14 +660,14 @@ inline bool IsCSPLoad4Imm(intptr_t imm) {
 inline uint32_t EncodeCSPLoad4Imm(intptr_t imm) {
   ASSERT(IsCSPLoad4Imm(imm));
   uint32_t encoding = 0;
-  encoding |= ((imm >> 5) & 0x1) << 11;
+  encoding |= ((imm >> 5) & 0x1) << 12;
   encoding |= ((imm >> 2) & 0x7) << 4;
   encoding |= ((imm >> 6) & 0x3) << 2;
   return encoding;
 }
 inline intx_t DecodeCSPLoad4Imm(uint32_t encoding) {
   uint32_t imm = 0;
-  imm |= ((encoding >> 11) & 0x1) << 5;
+  imm |= ((encoding >> 12) & 0x1) << 5;
   imm |= ((encoding >> 4) & 0x7) << 2;
   imm |= ((encoding >> 2) & 0x3) << 6;
   return imm;
@@ -679,14 +679,14 @@ inline bool IsCSPLoad8Imm(intptr_t imm) {
 inline uint32_t EncodeCSPLoad8Imm(intptr_t imm) {
   ASSERT(IsCSPLoad8Imm(imm));
   uint32_t encoding = 0;
-  encoding |= ((imm >> 5) & 0x1) << 11;
+  encoding |= ((imm >> 5) & 0x1) << 12;
   encoding |= ((imm >> 3) & 0x3) << 5;
   encoding |= ((imm >> 6) & 0x7) << 2;
   return encoding;
 }
 inline intx_t DecodeCSPLoad8Imm(uint32_t encoding) {
   uint32_t imm = 0;
-  imm |= ((encoding >> 11) & 0x1) << 5;
+  imm |= ((encoding >> 12) & 0x1) << 5;
   imm |= ((encoding >> 5) & 0x3) << 3;
   imm |= ((encoding >> 2) & 0x7) << 6;
   return imm;
@@ -699,13 +699,13 @@ inline uint32_t EncodeCSPStore4Imm(intptr_t imm) {
   ASSERT(IsCSPStore4Imm(imm));
   uint32_t encoding = 0;
   encoding |= ((imm >> 2) & 0xF) << 9;
-  encoding |= ((imm >> 6) & 0x3) << 6;
+  encoding |= ((imm >> 6) & 0x3) << 7;
   return encoding;
 }
 inline intx_t DecodeCSPStore4Imm(uint32_t encoding) {
   uint32_t imm = 0;
   imm |= ((encoding >> 9) & 0xF) << 2;
-  imm |= ((encoding >> 6) & 0x3) << 6;
+  imm |= ((encoding >> 7) & 0x3) << 6;
   return imm;
 }
 

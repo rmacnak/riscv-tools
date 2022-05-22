@@ -6591,6 +6591,35 @@ UNIT_TEST(CompressedLoadStoreWordSP) {
   }
 }
 
+UNIT_TEST(CompressedLoadStoreSPLarge) {
+  Assembler assembler(RV_GC);
+#if XLEN == 32
+  __ lw(A0, Address(SP, 252));
+  __ sw(A0, Address(SP, 252));
+#elif XLEN == 64
+  __ ld(A0, Address(SP, 504));
+  __ sd(A0, Address(SP, 504));
+#endif
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "      557e lw a0, 252(sp)\n"
+      "      dfaa sw a0, 252(sp)\n",
+      disassembly);
+#elif XLEN == 64
+  EXPECT_STREQ(
+      "      757e ld a0, 504(sp)\n"
+      "      ffaa sd a0, 504(sp)\n",
+      disassembly);
+#endif
+  free(disassembly);
+}
+
 #if XLEN == 32
 UNIT_TEST(CompressedLoadStoreSingleFloatSP) {
   {
