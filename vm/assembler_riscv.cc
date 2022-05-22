@@ -1226,9 +1226,9 @@ void Assembler::fcvtsd(FRegister rd, FRegister rs1, RoundingMode rounding) {
   EmitRType(FCVTS, FRegister(1), rs1, rounding, rd, OPFP);
 }
 
-void Assembler::fcvtds(FRegister rd, FRegister rs1) {
+void Assembler::fcvtds(FRegister rd, FRegister rs1, RoundingMode rounding) {
   ASSERT(Supports(RV_D));
-  EmitRType(FCVTD, FRegister(0), rs1, F3_0, rd, OPFP);
+  EmitRType(FCVTD, FRegister(0), rs1, rounding, rd, OPFP);
 }
 
 void Assembler::feqd(Register rd, FRegister rs1, FRegister rs2) {
