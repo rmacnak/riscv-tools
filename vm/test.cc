@@ -31,6 +31,9 @@ class Expect {
   template <typename E, typename A>
   void StringEquals(const E& expected, const A& actual);
 
+  template <typename T>
+  void BitwiseEquals(const T& expected, const T& actual);
+
  private:
   const char* const file_;
   const int line_;
@@ -43,6 +46,9 @@ class Expect {
 
 #define EXPECT_STREQ(expected, actual)                                         \
   psoup::Expect(__FILE__, __LINE__).StringEquals((expected), (actual))
+
+#define EXPECT_BITEQ(expected, actual)                                  \
+  psoup::Expect(__FILE__, __LINE__).BitwiseEquals((expected), (actual))
 
 void Expect::Fail(const char* format, ...) {
   fprintf(stderr, "%s:%d: error: ", file_, line_);
@@ -75,6 +81,17 @@ void Expect::StringEquals(const E& expected, const A& actual) {
   if (as == es)
     return;
   Fail("expected:\n<\"%s\">\nbut was:\n<\"%s\">", es.c_str(), as.c_str());
+}
+
+template <typename T>
+void Expect::BitwiseEquals(const T& expected, const T& actual) {
+  if (memcmp(&expected, &actual, sizeof(T)) == 0)
+    return;
+  std::ostringstream ess, ass;
+  ess << expected;
+  ass << actual;
+  std::string es = ess.str(), as = ass.str();
+  Fail("expected: <%s> but was: <%s>", es.c_str(), as.c_str());
 }
 
 class UnitTest;
@@ -4242,11 +4259,25 @@ UNIT_TEST(SingleMin) {
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -3.0f));
   EXPECT_EQ(-5.0f, simulator.CallF(buffer, -3.0f, -5.0f));
 
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, 0.0f, -0.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f, 0.0f));
+
   float qNAN = std::numeric_limits<float>::quiet_NaN();
   EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, qNAN));
   EXPECT_EQ(3.0f, simulator.CallF(buffer, qNAN, 3.0f));
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, qNAN));
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, qNAN, -3.0f));
+
+  float sNAN = std::numeric_limits<float>::signaling_NaN();
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, sNAN));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, sNAN, 3.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, sNAN));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, sNAN, -3.0f));
+
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, qNAN));
 }
 
 UNIT_TEST(SingleMax) {
@@ -4279,11 +4310,25 @@ UNIT_TEST(SingleMax) {
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -3.0f));
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -5.0f));
 
+  EXPECT_BITEQ(0.0f, simulator.CallF(buffer, 0.0f, -0.0f));
+  EXPECT_BITEQ(0.0f, simulator.CallF(buffer, -0.0f, 0.0f));
+
   float qNAN = std::numeric_limits<float>::quiet_NaN();
   EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, qNAN));
   EXPECT_EQ(3.0f, simulator.CallF(buffer, qNAN, 3.0f));
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, qNAN));
   EXPECT_EQ(-3.0f, simulator.CallF(buffer, qNAN, -3.0f));
+
+  float sNAN = std::numeric_limits<float>::signaling_NaN();
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, sNAN));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, sNAN, 3.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, sNAN));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, sNAN, -3.0f));
+
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, qNAN));
 }
 
 UNIT_TEST(SingleEqual) {
@@ -5464,11 +5509,25 @@ UNIT_TEST(DoubleMin) {
   EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -3.0));
   EXPECT_EQ(-5.0, simulator.CallD(buffer, -3.0, -5.0));
 
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, 0.0, -0.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0, 0.0));
+
   double qNAN = std::numeric_limits<double>::quiet_NaN();
   EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, qNAN));
   EXPECT_EQ(3.0, simulator.CallD(buffer, qNAN, 3.0));
   EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, qNAN));
   EXPECT_EQ(-3.0, simulator.CallD(buffer, qNAN, -3.0));
+
+  double sNAN = std::numeric_limits<double>::signaling_NaN();
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, sNAN));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, sNAN, 3.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, sNAN));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, sNAN, -3.0));
+
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, qNAN));
 }
 
 UNIT_TEST(DoubleMax) {
@@ -5501,11 +5560,25 @@ UNIT_TEST(DoubleMax) {
   EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -3.0));
   EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -5.0));
 
+  EXPECT_BITEQ(0.0, simulator.CallD(buffer, 0.0, -0.0));
+  EXPECT_BITEQ(0.0, simulator.CallD(buffer, -0.0, 0.0));
+
   double qNAN = std::numeric_limits<double>::quiet_NaN();
   EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, qNAN));
   EXPECT_EQ(3.0, simulator.CallD(buffer, qNAN, 3.0));
   EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, qNAN));
   EXPECT_EQ(-3.0, simulator.CallD(buffer, qNAN, -3.0));
+
+  double sNAN = std::numeric_limits<double>::signaling_NaN();
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, sNAN));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, sNAN, 3.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, sNAN));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, sNAN, -3.0));
+
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, qNAN));
 }
 
 UNIT_TEST(DoubleToSingle) {
