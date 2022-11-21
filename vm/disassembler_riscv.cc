@@ -544,11 +544,46 @@ void Disassembler::DisassembleOPIMM(Instruction instr) {
       Print("andi 'rd, 'rs1, 'iimm", instr, RV_I);
       break;
     case SLLI:
-      Print("slli 'rd, 'rs1, 'shamt", instr, RV_I);
+      if (instr.funct7() == COUNT) {
+        if (instr.shamt() == 0b00000) {
+          Print("clz 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00001) {
+          Print("ctz 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00010) {
+          Print("cpop 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00100) {
+          Print("sext.b 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00101) {
+          Print("sext.h 'rd, 'rs1", instr, RV_Zbb);
+        } else {
+          UnknownInstruction(instr);
+        }
+      } else if ((instr.funct7() & 0b1111110) == BCLRBEXT) {
+        Print("bclri 'rd, 'rs1, 'shamt", instr, RV_Zbs);
+      } else if ((instr.funct7() & 0b1111110) == BINV) {
+        Print("binvi 'rd, 'rs1, 'shamt", instr, RV_Zbs);
+      } else if ((instr.funct7() & 0b1111110) == BSET) {
+        Print("bseti 'rd, 'rs1, 'shamt", instr, RV_Zbs);
+      } else {
+        Print("slli 'rd, 'rs1, 'shamt", instr, RV_I);
+      }
       break;
     case SRI:
       if ((instr.funct7() & 0b1111110) == SRA) {
         Print("srai 'rd, 'rs1, 'shamt", instr, RV_I);
+      } else if ((instr.funct7() & 0b1111110) == ROTATE) {
+        Print("rori 'rd, 'rs1, 'shamt", instr, RV_Zbb);
+      } else if (instr.funct7() == 0b0010100) {
+        Print("orc.b 'rd, 'rs1", instr, RV_Zbb);
+#if XLEN == 32
+      } else if (instr.funct7() == 0b0110100) {
+        Print("rev8 'rd, 'rs1", instr, RV_Zbb);
+#else
+      } else if (instr.funct7() == 0b0110101) {
+        Print("rev8 'rd, 'rs1", instr, RV_Zbb);
+#endif
+      } else if ((instr.funct7() & 0b1111110) == BCLRBEXT) {
+        Print("bexti 'rd, 'rs1, 'shamt", instr, RV_Zbs);
       } else {
         Print("srli 'rd, 'rs1, 'shamt", instr, RV_I);
       }
@@ -569,11 +604,27 @@ void Disassembler::DisassembleOPIMM32(Instruction instr) {
       }
       break;
     case SLLI:
-      Print("slliw 'rd, 'rs1, 'shamt", instr, RV_I);
+      if (instr.funct7() == SLLIUW) {
+        Print("slli.uw 'rd, 'rs1, 'shamt", instr, RV_Zba);
+      } else if (instr.funct7() == COUNT) {
+        if (instr.shamt() == 0b00000) {
+          Print("clzw 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00001) {
+          Print("ctzw 'rd, 'rs1", instr, RV_Zbb);
+        } else if (instr.shamt() == 0b00010) {
+          Print("cpopw 'rd, 'rs1", instr, RV_Zbb);
+        } else {
+          UnknownInstruction(instr);
+        }
+      } else {
+        Print("slliw 'rd, 'rs1, 'shamt", instr, RV_I);
+      }
       break;
     case SRI:
       if (instr.funct7() == SRA) {
         Print("sraiw 'rd, 'rs1, 'shamt", instr, RV_I);
+      } else if (instr.funct7() == ROTATE) {
+        Print("roriw 'rd, 'rs1, 'shamt", instr, RV_Zbb);
       } else {
         Print("srliw 'rd, 'rs1, 'shamt", instr, RV_I);
       }
@@ -595,6 +646,29 @@ void Disassembler::DisassembleOP(Instruction instr) {
     case MULDIV:
       DisassembleOP_MULDIV(instr);
       break;
+    case SHADD:
+      DisassembleOP_SHADD(instr);
+      break;
+    case MINMAXCLMUL:
+      DisassembleOP_MINMAXCLMUL(instr);
+      break;
+    case ROTATE:
+      DisassembleOP_ROTATE(instr);
+      break;
+    case BCLRBEXT:
+      DisassembleOP_BCLRBEXT(instr);
+      break;
+    case BINV:
+      Print("binv 'rd, 'rs1, 'rs2", instr, RV_Zbs);
+      break;
+    case BSET:
+      Print("bset 'rd, 'rs1, 'rs2", instr, RV_Zbs);
+      break;
+#if XLEN == 32
+    case 0b0000100:
+      Print("zext.h 'rd, 'rs1", instr, RV_Zbb);
+      break;
+#endif
     default:
       UnknownInstruction(instr);
   }
@@ -653,6 +727,15 @@ void Disassembler::DisassembleOP_SUB(Instruction instr) {
     case SR:
       Print("sra 'rd, 'rs1, 'rs2", instr, RV_I);
       break;
+    case AND:
+      Print("andn 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case OR:
+      Print("orn 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case XOR:
+      Print("xnor 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -689,6 +772,76 @@ void Disassembler::DisassembleOP_MULDIV(Instruction instr) {
   }
 }
 
+void Disassembler::DisassembleOP_SHADD(Instruction instr) {
+  switch (instr.funct3()) {
+    case SH1ADD:
+      Print("sh1add 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    case SH2ADD:
+      Print("sh2add 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    case SH3ADD:
+      Print("sh3add 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP_MINMAXCLMUL(Instruction instr) {
+  switch (instr.funct3()) {
+    case MAX:
+      Print("max 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case MAXU:
+      Print("maxu 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case MIN:
+      Print("min 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case MINU:
+      Print("minu 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case CLMUL:
+      Print("clmul 'rd, 'rs1, 'rs2", instr, RV_Zbc);
+      break;
+    case CLMULH:
+      Print("clmulh 'rd, 'rs1, 'rs2", instr, RV_Zbc);
+      break;
+    case CLMULR:
+      Print("clmulr 'rd, 'rs1, 'rs2", instr, RV_Zbc);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP_ROTATE(Instruction instr) {
+  switch (instr.funct3()) {
+    case ROR:
+      Print("ror 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case ROL:
+      Print("rol 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP_BCLRBEXT(Instruction instr) {
+  switch (instr.funct3()) {
+    case BCLR:
+      Print("bclr 'rd, 'rs1, 'rs2", instr, RV_Zbs);
+      break;
+    case BEXT:
+      Print("bext 'rd, 'rs1, 'rs2", instr, RV_Zbs);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
 void Disassembler::DisassembleOP32(Instruction instr) {
   switch (instr.funct7()) {
     case 0:
@@ -699,6 +852,15 @@ void Disassembler::DisassembleOP32(Instruction instr) {
       break;
     case MULDIV:
       DisassembleOP32_MULDIV(instr);
+      break;
+    case SHADD:
+      DisassembleOP32_SHADD(instr);
+      break;
+    case ADDUW:
+      DisassembleOP32_ADDUW(instr);
+      break;
+    case ROTATE:
+      DisassembleOP32_ROTATE(instr);
       break;
     default:
       UnknownInstruction(instr);
@@ -762,6 +924,50 @@ void Disassembler::DisassembleOP32_MULDIV(Instruction instr) {
       Print("remuw 'rd, 'rs1, 'rs2", instr, RV_M);
       break;
 #endif
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP32_SHADD(Instruction instr) {
+  switch (instr.funct3()) {
+    case SH1ADD:
+      Print("sh1add.uw 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    case SH2ADD:
+      Print("sh2add.uw 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    case SH3ADD:
+      Print("sh3add.uw 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP32_ADDUW(Instruction instr) {
+  switch (instr.funct3()) {
+#if XLEN >= 64
+    case F3_0:
+      Print("add.uw 'rd, 'rs1, 'rs2", instr, RV_Zba);
+      break;
+    case ZEXT:
+      Print("zext.h 'rd, 'rs1", instr, RV_Zbb);
+      break;
+#endif
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP32_ROTATE(Instruction instr) {
+  switch (instr.funct3()) {
+    case ROR:
+      Print("rorw 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
+    case ROL:
+      Print("rolw 'rd, 'rs1, 'rs2", instr, RV_Zbb);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1037,10 +1243,10 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
     }
     case FMINMAXS: {
       switch (instr.funct3()) {
-        case MIN:
+        case FMIN:
           Print("fmin.s 'frd, 'frs1, 'frs2", instr, RV_F);
           break;
-        case MAX:
+        case FMAX:
           Print("fmax.s 'frd, 'frs1, 'frs2", instr, RV_F);
           break;
         default:
@@ -1164,10 +1370,10 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
     }
     case FMINMAXD: {
       switch (instr.funct3()) {
-        case MIN:
+        case FMIN:
           Print("fmin.d 'frd, 'frs1, 'frs2", instr, RV_D);
           break;
-        case MAX:
+        case FMAX:
           Print("fmax.d 'frd, 'frs1, 'frs2", instr, RV_D);
           break;
         default:

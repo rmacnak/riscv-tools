@@ -1013,12 +1013,12 @@ void Assembler::fsgnjxs(FRegister rd, FRegister rs1, FRegister rs2) {
 
 void Assembler::fmins(FRegister rd, FRegister rs1, FRegister rs2) {
   ASSERT(Supports(RV_F));
-  EmitRType(FMINMAXS, rs2, rs1, MIN, rd, OPFP);
+  EmitRType(FMINMAXS, rs2, rs1, FMIN, rd, OPFP);
 }
 
 void Assembler::fmaxs(FRegister rd, FRegister rs1, FRegister rs2) {
   ASSERT(Supports(RV_F));
-  EmitRType(FMINMAXS, rs2, rs1, MAX, rd, OPFP);
+  EmitRType(FMINMAXS, rs2, rs1, FMAX, rd, OPFP);
 }
 
 void Assembler::feqs(Register rd, FRegister rs1, FRegister rs2) {
@@ -1213,12 +1213,12 @@ void Assembler::fsgnjxd(FRegister rd, FRegister rs1, FRegister rs2) {
 
 void Assembler::fmind(FRegister rd, FRegister rs1, FRegister rs2) {
   ASSERT(Supports(RV_D));
-  EmitRType(FMINMAXD, rs2, rs1, MIN, rd, OPFP);
+  EmitRType(FMINMAXD, rs2, rs1, FMIN, rd, OPFP);
 }
 
 void Assembler::fmaxd(FRegister rd, FRegister rs1, FRegister rs2) {
   ASSERT(Supports(RV_D));
-  EmitRType(FMINMAXD, rs2, rs1, MAX, rd, OPFP);
+  EmitRType(FMINMAXD, rs2, rs1, FMAX, rd, OPFP);
 }
 
 void Assembler::fcvtsd(FRegister rd, FRegister rs1, RoundingMode rounding) {
@@ -1302,6 +1302,242 @@ void Assembler::fmvdx(FRegister rd, Register rs1) {
   EmitRType(FMVDX, FRegister(0), rs1, F3_0, rd, OPFP);
 }
 #endif  // XLEN >= 64
+
+#if XLEN >= 64
+void Assembler::adduw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(ADDUW, rs2, rs1, F3_0, rd, OP32);
+}
+#endif
+
+void Assembler::sh1add(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH1ADD, rd, OP);
+}
+
+#if XLEN >= 64
+void Assembler::sh1adduw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH1ADD, rd, OP32);
+}
+#endif
+
+void Assembler::sh2add(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH2ADD, rd, OP);
+}
+
+#if XLEN >= 64
+void Assembler::sh2adduw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH2ADD, rd, OP32);
+}
+#endif
+
+void Assembler::sh3add(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH3ADD, rd, OP);
+}
+
+#if XLEN >= 64
+void Assembler::sh3adduw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SHADD, rs2, rs1, SH3ADD, rd, OP32);
+}
+
+void Assembler::slliuw(Register rd, Register rs1, intx_t shamt) {
+  ASSERT((shamt > 0) && (shamt < 32));
+  ASSERT(Supports(RV_Zba));
+  EmitRType(SLLIUW, shamt, rs1, SLLI, rd, OPIMM32);
+}
+#endif
+
+void Assembler::andn(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(SUB, rs2, rs1, AND, rd, OP);
+}
+
+void Assembler::orn(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(SUB, rs2, rs1, OR, rd, OP);
+}
+
+void Assembler::xnor(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(SUB, rs2, rs1, XOR, rd, OP);
+}
+
+void Assembler::clz(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00000, rs1, F3_COUNT, rd, OPIMM);
+}
+
+void Assembler::clzw(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00000, rs1, F3_COUNT, rd, OPIMM32);
+}
+
+void Assembler::ctz(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00001, rs1, F3_COUNT, rd, OPIMM);
+}
+
+void Assembler::ctzw(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00001, rs1, F3_COUNT, rd, OPIMM32);
+}
+
+void Assembler::cpop(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00010, rs1, F3_COUNT, rd, OPIMM);
+}
+
+void Assembler::cpopw(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(COUNT, 0b00010, rs1, F3_COUNT, rd, OPIMM32);
+}
+
+void Assembler::max(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(MINMAXCLMUL, rs2, rs1, MAX, rd, OP);
+}
+
+void Assembler::maxu(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(MINMAXCLMUL, rs2, rs1, MAXU, rd, OP);
+}
+
+void Assembler::min(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(MINMAXCLMUL, rs2, rs1, MIN, rd, OP);
+}
+
+void Assembler::minu(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(MINMAXCLMUL, rs2, rs1, MINU, rd, OP);
+}
+
+void Assembler::sextb(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType((Funct7)0b0110000, 0b00100, rs1, SEXT, rd, OPIMM);
+}
+
+void Assembler::sexth(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType((Funct7)0b0110000, 0b00101, rs1, SEXT, rd, OPIMM);
+}
+
+void Assembler::zexth(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+#if XLEN == 32
+  EmitRType((Funct7)0b0000100, 0b00000, rs1, ZEXT, rd, OP);
+#elif XLEN == 64
+  EmitRType((Funct7)0b0000100, 0b00000, rs1, ZEXT, rd, OP32);
+#else
+  UNIMPLEMENTED();
+#endif
+}
+
+void Assembler::rol(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, rs2, rs1, ROL, rd, OP);
+}
+
+void Assembler::rolw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, rs2, rs1, ROL, rd, OP32);
+}
+
+void Assembler::ror(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, rs2, rs1, ROR, rd, OP);
+}
+
+void Assembler::rori(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, shamt, rs1, ROR, rd, OPIMM);
+}
+
+void Assembler::roriw(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, shamt, rs1, ROR, rd, OPIMM32);
+}
+
+void Assembler::rorw(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType(ROTATE, rs2, rs1, ROR, rd, OP32);
+}
+
+void Assembler::orcb(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+  EmitRType((Funct7)0b0010100, 0b00111, rs1, (Funct3)0b101, rd, OPIMM);
+}
+
+void Assembler::rev8(Register rd, Register rs1) {
+  ASSERT(Supports(RV_Zbb));
+#if XLEN == 32
+  EmitRType((Funct7)0b0110100, 0b11000, rs1, (Funct3)0b101, rd, OPIMM);
+#elif XLEN == 64
+  EmitRType((Funct7)0b0110101, 0b11000, rs1, (Funct3)0b101, rd, OPIMM);
+#else
+  UNIMPLEMENTED();
+#endif
+}
+
+void Assembler::clmul(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbc));
+  EmitRType(MINMAXCLMUL, rs2, rs1, CLMUL, rd, OP);
+}
+
+void Assembler::clmulh(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbc));
+  EmitRType(MINMAXCLMUL, rs2, rs1, CLMULH, rd, OP);
+}
+
+void Assembler::clmulr(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbc));
+  EmitRType(MINMAXCLMUL, rs2, rs1, CLMULR, rd, OP);
+}
+
+void Assembler::bclr(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BCLRBEXT, rs2, rs1, BCLR, rd, OP);
+}
+
+void Assembler::bclri(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BCLRBEXT, shamt, rs1, BCLR, rd, OPIMM);
+}
+
+void Assembler::bext(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BCLRBEXT, rs2, rs1, BEXT, rd, OP);
+}
+
+void Assembler::bexti(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BCLRBEXT, shamt, rs1, BEXT, rd, OPIMM);
+}
+
+void Assembler::binv(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BINV, rs2, rs1, F3_BINV, rd, OP);
+}
+
+void Assembler::binvi(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BINV, shamt, rs1, F3_BINV, rd, OPIMM);
+}
+
+void Assembler::bset(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BSET, rs2, rs1, F3_BSET, rd, OP);
+}
+
+void Assembler::bseti(Register rd, Register rs1, intx_t shamt) {
+  ASSERT(Supports(RV_Zbs));
+  EmitRType(BSET, shamt, rs1, F3_BSET, rd, OPIMM);
+}
 
 void Assembler::c_lwsp(Register rd, Address addr) {
   ASSERT(rd != ZERO);

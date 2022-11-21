@@ -64,10 +64,17 @@ class Disassembler {
   void DisassembleOP_0(Instruction instr);
   void DisassembleOP_SUB(Instruction instr);
   void DisassembleOP_MULDIV(Instruction instr);
+  void DisassembleOP_SHADD(Instruction instr);
+  void DisassembleOP_MINMAXCLMUL(Instruction instr);
+  void DisassembleOP_ROTATE(Instruction instr);
+  void DisassembleOP_BCLRBEXT(Instruction instr);
   void DisassembleOP32(Instruction instr);
   void DisassembleOP32_0(Instruction instr);
   void DisassembleOP32_SUB(Instruction instr);
   void DisassembleOP32_MULDIV(Instruction instr);
+  void DisassembleOP32_SHADD(Instruction instr);
+  void DisassembleOP32_ADDUW(Instruction instr);
+  void DisassembleOP32_ROTATE(Instruction instr);
   void DisassembleMISCMEM(Instruction instr);
   void DisassembleSYSTEM(Instruction instr);
   void DisassembleAMO(Instruction instr);

@@ -7937,6 +7937,1299 @@ UNIT_TEST(CompressedEnvironmentBreak) {
   // Not running: would trap.
 }
 
+#if XLEN >= 64
+UNIT_TEST(AddUnsignedWord) {
+  Assembler assembler(RV_GCB);
+  __ adduw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  08b5053b add.uw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0x200000001,
+            simulator.Call(buffer, 0x1, 0x200000000));
+  EXPECT_EQ(0x200000001,
+            simulator.Call(buffer, 0x100000001, 0x200000000));
+  EXPECT_EQ(0x2FFFFFFFF,
+            simulator.Call(buffer, -0x1, 0x200000000));
+}
+#endif
+
+UNIT_TEST(Shift1Add) {
+  Assembler assembler(RV_GCB);
+  __ sh1add(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b52533 sh1add a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1002, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(998, simulator.Call(buffer, -1, 1000));
+}
+
+UNIT_TEST(Shift2Add) {
+  Assembler assembler(RV_GCB);
+  __ sh2add(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b54533 sh2add a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1004, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(996, simulator.Call(buffer, -1, 1000));
+}
+
+UNIT_TEST(Shift3Add) {
+  Assembler assembler(RV_GCB);
+  __ sh3add(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b56533 sh3add a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1008, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(992, simulator.Call(buffer, -1, 1000));
+}
+
+#if XLEN >= 64
+UNIT_TEST(Shift1AddUnsignedWord) {
+  Assembler assembler(RV_GCB);
+  __ sh1adduw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b5253b sh1add.uw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1002, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1002, simulator.Call(buffer, 0x100000001, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(8589935590, simulator.Call(buffer, -1, 1000));
+}
+
+UNIT_TEST(Shift2AddUnsignedWord) {
+  Assembler assembler(RV_GCB);
+  __ sh2adduw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b5453b sh2add.uw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1004, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1004, simulator.Call(buffer, 0x100000001, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(17179870180, simulator.Call(buffer, -1, 1000));
+}
+
+UNIT_TEST(Shift3AddUnsignedWord) {
+  Assembler assembler(RV_GCB);
+  __ sh3adduw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b5653b sh3add.uw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1008, simulator.Call(buffer, 1, 1000));
+  EXPECT_EQ(1008, simulator.Call(buffer, 0x100000001, 1000));
+  EXPECT_EQ(1000, simulator.Call(buffer, 0, 1000));
+  EXPECT_EQ(34359739360, simulator.Call(buffer, -1, 1000));
+}
+
+UNIT_TEST(ShiftLeftLogicalImmediateUnsignedWord) {
+  Assembler assembler(RV_GCB);
+  __ slliuw(A0, A0, 8);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0885151b slli.uw a0, a0, 0x8\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0x100, simulator.Call(buffer, 0x1));
+  EXPECT_EQ(0x1000000000, simulator.Call(buffer, 0x10000000));
+  EXPECT_EQ(0, simulator.Call(buffer, 0x100000000));
+  EXPECT_EQ(0x100, simulator.Call(buffer, 0x100000001));
+}
+#endif
+
+UNIT_TEST(AndNot) {
+  Assembler assembler(RV_GCB);
+  __ andn(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  40b57533 andn a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(6, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(0, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-24, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(16, simulator.Call(buffer, -7, -17));
+  EXPECT_EQ(16, simulator.Call(buffer, 17, 7));
+  EXPECT_EQ(0, simulator.Call(buffer, 17, -7));
+  EXPECT_EQ(-24, simulator.Call(buffer, -17, 7));
+  EXPECT_EQ(6, simulator.Call(buffer, -17, -7));
+}
+
+UNIT_TEST(OrNot) {
+  Assembler assembler(RV_GCB);
+  __ orn(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  40b56533 orn a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(-17, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(23, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-1, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7, -17));
+  EXPECT_EQ(-7, simulator.Call(buffer, 17, 7));
+  EXPECT_EQ(23, simulator.Call(buffer, 17, -7));
+  EXPECT_EQ(-1, simulator.Call(buffer, -17, 7));
+  EXPECT_EQ(-17, simulator.Call(buffer, -17, -7));
+}
+
+UNIT_TEST(XorNot) {
+  Assembler assembler(RV_GCB);
+  __ xnor(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  40b54533 xnor a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(-23, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(23, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(23, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(-23, simulator.Call(buffer, -7, -17));
+  EXPECT_EQ(-23, simulator.Call(buffer, 17, 7));
+  EXPECT_EQ(23, simulator.Call(buffer, 17, -7));
+  EXPECT_EQ(23, simulator.Call(buffer, -17, 7));
+  EXPECT_EQ(-23, simulator.Call(buffer, -17, -7));
+}
+
+UNIT_TEST(CountLeadingZeroes) {
+  Assembler assembler(RV_GCB);
+  __ clz(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60051513 clz a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(XLEN, simulator.Call(buffer, 0));
+  EXPECT_EQ(XLEN-1, simulator.Call(buffer, 1));
+  EXPECT_EQ(XLEN-2, simulator.Call(buffer, 2));
+  EXPECT_EQ(XLEN-3, simulator.Call(buffer, 4));
+  EXPECT_EQ(XLEN-8, simulator.Call(buffer, 240));
+  EXPECT_EQ(0, simulator.Call(buffer, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, -2));
+  EXPECT_EQ(0, simulator.Call(buffer, -4));
+  EXPECT_EQ(0, simulator.Call(buffer, -240));
+}
+
+UNIT_TEST(CountTrailingZeroes) {
+  Assembler assembler(RV_GCB);
+  __ ctz(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60151513 ctz a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(XLEN, simulator.Call(buffer, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 1));
+  EXPECT_EQ(1, simulator.Call(buffer, 2));
+  EXPECT_EQ(2, simulator.Call(buffer, 4));
+  EXPECT_EQ(4, simulator.Call(buffer, 240));
+  EXPECT_EQ(0, simulator.Call(buffer, -1));
+  EXPECT_EQ(1, simulator.Call(buffer, -2));
+  EXPECT_EQ(2, simulator.Call(buffer, -4));
+  EXPECT_EQ(4, simulator.Call(buffer, -240));
+}
+
+UNIT_TEST(CountPopulation) {
+  Assembler assembler(RV_GCB);
+  __ cpop(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60251513 cpop a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(3, simulator.Call(buffer, 7));
+  EXPECT_EQ(4, simulator.Call(buffer, 30));
+  EXPECT_EQ(XLEN, simulator.Call(buffer, -1));
+  EXPECT_EQ(XLEN-2, simulator.Call(buffer, -7));
+  EXPECT_EQ(XLEN-4, simulator.Call(buffer, -30));
+}
+
+#if XLEN >= 64
+UNIT_TEST(CountLeadingZeroesWord) {
+  Assembler assembler(RV_GCB);
+  __ clzw(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  6005151b clzw a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(32, simulator.Call(buffer, 0));
+  EXPECT_EQ(31, simulator.Call(buffer, 1));
+  EXPECT_EQ(30, simulator.Call(buffer, 2));
+  EXPECT_EQ(29, simulator.Call(buffer, 4));
+  EXPECT_EQ(24, simulator.Call(buffer, 240));
+  EXPECT_EQ(0, simulator.Call(buffer, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, -2));
+  EXPECT_EQ(0, simulator.Call(buffer, -4));
+  EXPECT_EQ(0, simulator.Call(buffer, -240));
+}
+
+UNIT_TEST(CountTrailingZeroesWord) {
+  Assembler assembler(RV_GCB);
+  __ ctzw(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  6015151b ctzw a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(32, simulator.Call(buffer, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 1));
+  EXPECT_EQ(1, simulator.Call(buffer, 2));
+  EXPECT_EQ(2, simulator.Call(buffer, 4));
+  EXPECT_EQ(4, simulator.Call(buffer, 240));
+  EXPECT_EQ(0, simulator.Call(buffer, -1));
+  EXPECT_EQ(1, simulator.Call(buffer, -2));
+  EXPECT_EQ(2, simulator.Call(buffer, -4));
+  EXPECT_EQ(4, simulator.Call(buffer, -240));
+}
+
+UNIT_TEST(CountPopulationWord) {
+  Assembler assembler(RV_GCB);
+  __ cpopw(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  6025151b cpopw a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(3, simulator.Call(buffer, 7));
+  EXPECT_EQ(4, simulator.Call(buffer, 30));
+  EXPECT_EQ(32, simulator.Call(buffer, -1));
+  EXPECT_EQ(30, simulator.Call(buffer, -7));
+  EXPECT_EQ(28, simulator.Call(buffer, -30));
+  EXPECT_EQ(0, simulator.Call(buffer, 0x7FFFFFFF00000000));
+}
+#endif
+
+UNIT_TEST(Max) {
+  Assembler assembler(RV_GCB);
+  __ max(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab56533 max a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(17, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(17, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(7, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7, -17));
+}
+
+UNIT_TEST(MaxUnsigned) {
+  Assembler assembler(RV_GCB);
+  __ maxu(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab57533 maxu a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(17, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(-17, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7, -17));
+}
+
+UNIT_TEST(Min) {
+  Assembler assembler(RV_GCB);
+  __ min(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab54533 min a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(7, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(-17, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-17, simulator.Call(buffer, -7, -17));
+}
+
+UNIT_TEST(MinUnsigned) {
+  Assembler assembler(RV_GCB);
+  __ minu(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab55533 minu a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(7, simulator.Call(buffer, 7, 17));
+  EXPECT_EQ(17, simulator.Call(buffer, -7, 17));
+  EXPECT_EQ(7, simulator.Call(buffer, 7, -17));
+  EXPECT_EQ(-17, simulator.Call(buffer, -7, -17));
+}
+
+UNIT_TEST(SignExtendByte) {
+  Assembler assembler(RV_GCB);
+  __ sextb(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60451513 sext.b a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(127, simulator.Call(buffer, 127));
+  EXPECT_EQ(-128, simulator.Call(buffer, 128));
+}
+
+UNIT_TEST(SignExtendHalfWord) {
+  Assembler assembler(RV_GCB);
+  __ sexth(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60551513 sext.h a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0x7BCD, simulator.Call(buffer, 0x12347BCD));
+  EXPECT_EQ(-1, simulator.Call(buffer, 0xFFFF));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(ZeroExtendHalfWord) {
+  Assembler assembler(RV_GCB);
+  __ zexth(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  08054533 zext.h a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+#else
+  EXPECT_STREQ(
+      "  0805453b zext.h a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0xABCD, simulator.Call(buffer, 0x1234ABCD));
+  EXPECT_EQ(0xFFFF, simulator.Call(buffer, 0xFFFF));
+  EXPECT_EQ(0xFFFF, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(RotateRight) {
+  Assembler assembler(RV_GCB);
+  __ ror(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b55533 ror a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(static_cast<intx_t>(0x12345678),
+            simulator.Call(buffer, 0x12345678, 0));
+  EXPECT_EQ(static_cast<intx_t>(0x81234567),
+            simulator.Call(buffer, 0x12345678, 4));
+  EXPECT_EQ(static_cast<intx_t>(0x23456781),
+            simulator.Call(buffer, 0x12345678, 28));
+  EXPECT_EQ(static_cast<intx_t>(0x81234567),
+            simulator.Call(buffer, 0x12345678, 36));
+#else
+  EXPECT_EQ(static_cast<intx_t>(0x0123456789ABCDEF),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 0));
+  EXPECT_EQ(static_cast<intx_t>(0xF0123456789ABCDE),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 4));
+  EXPECT_EQ(static_cast<intx_t>(0x123456789ABCDEF0),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 60));
+  EXPECT_EQ(static_cast<intx_t>(0xF0123456789ABCDE),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 68));
+#endif
+}
+
+UNIT_TEST(RotateLeft) {
+  Assembler assembler(RV_GCB);
+  __ rol(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b51533 rol a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(static_cast<intx_t>(0x12345678),
+            simulator.Call(buffer, 0x12345678, 0));
+  EXPECT_EQ(static_cast<intx_t>(0x23456781),
+            simulator.Call(buffer, 0x12345678, 4));
+  EXPECT_EQ(static_cast<intx_t>(0x81234567),
+            simulator.Call(buffer, 0x12345678, 28));
+  EXPECT_EQ(static_cast<intx_t>(0x23456781),
+            simulator.Call(buffer, 0x12345678, 36));
+#else
+  EXPECT_EQ(static_cast<intx_t>(0x0123456789ABCDEF),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 0));
+  EXPECT_EQ(static_cast<intx_t>(0x123456789ABCDEF0),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 4));
+  EXPECT_EQ(static_cast<intx_t>(0xF0123456789ABCDE),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 60));
+  EXPECT_EQ(static_cast<intx_t>(0x123456789ABCDEF0),
+            simulator.Call(buffer, 0x0123456789ABCDEF, 68));
+#endif
+}
+
+UNIT_TEST(RotateRightImmediate) {
+  Assembler assembler(RV_GCB);
+  __ rori(A0, A0, 4);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60455513 rori a0, a0, 0x4\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(static_cast<intx_t>(0x81234567),
+            simulator.Call(buffer, 0x12345678));
+#else
+  EXPECT_EQ(static_cast<intx_t>(0xF0123456789ABCDE),
+            simulator.Call(buffer, 0x0123456789ABCDEF));
+#endif
+}
+
+#if XLEN >= 64
+UNIT_TEST(RotateRightWord) {
+  Assembler assembler(RV_GCB);
+  __ rorw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b5553b rorw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(0x12345678),
+            simulator.Call(buffer, 0x12345678, 0));
+  EXPECT_EQ(sign_extend(0x81234567),
+            simulator.Call(buffer, 0x12345678, 4));
+  EXPECT_EQ(sign_extend(0x23456781),
+            simulator.Call(buffer, 0x12345678, 28));
+  EXPECT_EQ(sign_extend(0x81234567),
+            simulator.Call(buffer, 0x12345678, 36));
+}
+
+UNIT_TEST(RotateLeftWord) {
+  Assembler assembler(RV_GCB);
+  __ rolw(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b5153b rolw a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(0x12345678),
+            simulator.Call(buffer, 0x12345678, 0));
+  EXPECT_EQ(sign_extend(0x23456781),
+            simulator.Call(buffer, 0x12345678, 4));
+  EXPECT_EQ(sign_extend(0x81234567),
+            simulator.Call(buffer, 0x12345678, 28));
+  EXPECT_EQ(sign_extend(0x23456781),
+            simulator.Call(buffer, 0x12345678, 36));
+}
+
+UNIT_TEST(RotateRightImmediateWord) {
+  Assembler assembler(RV_GCB);
+  __ roriw(A0, A0, 4);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  6045551b roriw a0, a0, 0x4\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(0x81234567), simulator.Call(buffer, 0x12345678));
+}
+#endif
+
+UNIT_TEST(OrCombineBytes) {
+  Assembler assembler(RV_GCB);
+  __ orcb(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  28755513 orc.b a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1));
+  EXPECT_EQ(0x00FF00FF, simulator.Call(buffer, 0x00010001));
+#if XLEN >= 64
+  EXPECT_EQ(0x00FF00FF00FF00FF, simulator.Call(buffer, 0x0001000100010001));
+#endif
+}
+
+UNIT_TEST(ByteReverse) {
+  Assembler assembler(RV_GCB);
+  __ rev8(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  69855513 rev8 a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+#else
+  EXPECT_STREQ(
+      "  6b855513 rev8 a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1));
+#if XLEN == 32
+  EXPECT_EQ(0x11223344, simulator.Call(buffer, 0x44332211));
+#elif XLEN == 64
+  EXPECT_EQ(0x1122334455667788, simulator.Call(buffer, 0x8877665544332211));
+#endif
+}
+
+UNIT_TEST(CarrylessMultiply) {
+  Assembler assembler(RV_GCB);
+  __ clmul(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab51533 clmul a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(0x55555555, simulator.Call(buffer, -1, -1));
+#else
+  EXPECT_EQ(0x5555555555555555, simulator.Call(buffer, -1, -1));
+#endif
+  EXPECT_EQ(0, simulator.Call(buffer, -1, 0));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 1));
+  EXPECT_EQ(-1, simulator.Call(buffer, 1, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, 1, 1));
+
+  EXPECT_EQ(4, simulator.Call(buffer, 2, 2));
+  EXPECT_EQ(5, simulator.Call(buffer, 3, 3));
+  EXPECT_EQ(16, simulator.Call(buffer, 4, 4));
+  EXPECT_EQ(20, simulator.Call(buffer, 6, 6));
+}
+
+UNIT_TEST(CarrylessMultiplyHigh) {
+  Assembler assembler(RV_GCB);
+  __ clmulh(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab53533 clmulh a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(0x55555555, simulator.Call(buffer, -1, -1));
+#else
+  EXPECT_EQ(0x5555555555555555, simulator.Call(buffer, -1, -1));
+#endif
+  EXPECT_EQ(0, simulator.Call(buffer, -1, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, -1, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 1));
+
+  EXPECT_EQ(0, simulator.Call(buffer, 2, 2));
+  EXPECT_EQ(0, simulator.Call(buffer, 3, 3));
+  EXPECT_EQ(0, simulator.Call(buffer, 4, 4));
+  EXPECT_EQ(0, simulator.Call(buffer, 6, 6));
+}
+
+UNIT_TEST(CarrylessMultiplyReversed) {
+  Assembler assembler(RV_GCB);
+  __ clmulr(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0ab52533 clmulr a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+#if XLEN == 32
+  EXPECT_EQ(-0x55555556, simulator.Call(buffer, -1, -1));
+#else
+  EXPECT_EQ(-0x5555555555555556, simulator.Call(buffer, -1, -1));
+#endif
+  EXPECT_EQ(0, simulator.Call(buffer, -1, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, -1, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 0, 1));
+  EXPECT_EQ(1, simulator.Call(buffer, 1, -1));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 1));
+
+  EXPECT_EQ(0, simulator.Call(buffer, 2, 2));
+  EXPECT_EQ(0, simulator.Call(buffer, 3, 3));
+  EXPECT_EQ(0, simulator.Call(buffer, 4, 4));
+  EXPECT_EQ(0, simulator.Call(buffer, 6, 6));
+}
+
+UNIT_TEST(BitClear) {
+  Assembler assembler(RV_GCB);
+  __ bclr(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  48b51533 bclr a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(40, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 2));
+  EXPECT_EQ(34, simulator.Call(buffer, 42, 3));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 4));
+  EXPECT_EQ(10, simulator.Call(buffer, 42, 5));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 6));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 7));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 8));
+
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 64));
+  EXPECT_EQ(40, simulator.Call(buffer, 42, 65));
+}
+
+UNIT_TEST(BitClearImmediate) {
+  Assembler assembler(RV_GCB);
+  __ bclri(A0, A0, 3);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  48351513 bclri a0, a0, 0x3\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(7, simulator.Call(buffer, 7));
+  EXPECT_EQ(0, simulator.Call(buffer, 8));
+  EXPECT_EQ(1, simulator.Call(buffer, 9));
+  EXPECT_EQ(-15, simulator.Call(buffer, -7));
+  EXPECT_EQ(-16, simulator.Call(buffer, -8));
+  EXPECT_EQ(-9, simulator.Call(buffer, -9));
+}
+
+UNIT_TEST(BitClearImmediate2) {
+  Assembler assembler(RV_GCB);
+  __ bclri(A0, A0, XLEN - 1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  49f51513 bclri a0, a0, 0x1f\n"
+      "      8082 ret\n",
+      disassembly);
+#elif XLEN == 64
+  EXPECT_STREQ(
+      "  4bf51513 bclri a0, a0, 0x3f\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(kMaxIntX, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(BitExtract) {
+  Assembler assembler(RV_GCB);
+  __ bext(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  48b55533 bext a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(1, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 2));
+  EXPECT_EQ(1, simulator.Call(buffer, 42, 3));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 4));
+  EXPECT_EQ(1, simulator.Call(buffer, 42, 5));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 6));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 7));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 8));
+
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 64));
+  EXPECT_EQ(1, simulator.Call(buffer, 42, 65));
+}
+
+UNIT_TEST(BitExtractImmediate) {
+  Assembler assembler(RV_GCB);
+  __ bexti(A0, A0, 3);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  48355513 bexti a0, a0, 0x3\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 7));
+  EXPECT_EQ(1, simulator.Call(buffer, 8));
+  EXPECT_EQ(1, simulator.Call(buffer, 9));
+  EXPECT_EQ(1, simulator.Call(buffer, -7));
+  EXPECT_EQ(1, simulator.Call(buffer, -8));
+  EXPECT_EQ(0, simulator.Call(buffer, -9));
+}
+
+UNIT_TEST(BitExtractImmediate2) {
+  Assembler assembler(RV_GCB);
+  __ bexti(A0, A0, XLEN - 1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  49f55513 bexti a0, a0, 0x1f\n"
+      "      8082 ret\n",
+      disassembly);
+#elif XLEN == 64
+  EXPECT_STREQ(
+      "  4bf55513 bexti a0, a0, 0x3f\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 1));
+  EXPECT_EQ(1, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(BitInvert) {
+  Assembler assembler(RV_GCB);
+  __ binv(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  68b51533 binv a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(43, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(40, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(46, simulator.Call(buffer, 42, 2));
+  EXPECT_EQ(34, simulator.Call(buffer, 42, 3));
+  EXPECT_EQ(58, simulator.Call(buffer, 42, 4));
+  EXPECT_EQ(10, simulator.Call(buffer, 42, 5));
+  EXPECT_EQ(106, simulator.Call(buffer, 42, 6));
+  EXPECT_EQ(170, simulator.Call(buffer, 42, 7));
+  EXPECT_EQ(298, simulator.Call(buffer, 42, 8));
+
+  EXPECT_EQ(43, simulator.Call(buffer, 42, 64));
+  EXPECT_EQ(40, simulator.Call(buffer, 42, 65));
+}
+
+UNIT_TEST(BitInvertImmediate) {
+  Assembler assembler(RV_GCB);
+  __ binvi(A0, A0, 3);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  68351513 binvi a0, a0, 0x3\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(8, simulator.Call(buffer, 0));
+  EXPECT_EQ(15, simulator.Call(buffer, 7));
+  EXPECT_EQ(0, simulator.Call(buffer, 8));
+  EXPECT_EQ(1, simulator.Call(buffer, 9));
+  EXPECT_EQ(-15, simulator.Call(buffer, -7));
+  EXPECT_EQ(-16, simulator.Call(buffer, -8));
+  EXPECT_EQ(-1, simulator.Call(buffer, -9));
+}
+
+UNIT_TEST(BitInvertImmediate2) {
+  Assembler assembler(RV_GCB);
+  __ binvi(A0, A0, XLEN - 1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  69f51513 binvi a0, a0, 0x1f\n"
+      "      8082 ret\n",
+      disassembly);
+#elif XLEN == 64
+  EXPECT_STREQ(
+      "  6bf51513 binvi a0, a0, 0x3f\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(kMinIntX, simulator.Call(buffer, 0));
+  EXPECT_EQ(kMinIntX + 1, simulator.Call(buffer, 1));
+  EXPECT_EQ(kMaxIntX, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(BitSet) {
+  Assembler assembler(RV_GCB);
+  __ bset(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  28b51533 bset a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(43, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(46, simulator.Call(buffer, 42, 2));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 3));
+  EXPECT_EQ(58, simulator.Call(buffer, 42, 4));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 5));
+  EXPECT_EQ(106, simulator.Call(buffer, 42, 6));
+  EXPECT_EQ(170, simulator.Call(buffer, 42, 7));
+  EXPECT_EQ(298, simulator.Call(buffer, 42, 8));
+
+  EXPECT_EQ(43, simulator.Call(buffer, 42, 64));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 65));
+}
+
+UNIT_TEST(BitSetImmediate) {
+  Assembler assembler(RV_GCB);
+  __ bseti(A0, A0, 3);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  28351513 bseti a0, a0, 0x3\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(8, simulator.Call(buffer, 0));
+  EXPECT_EQ(15, simulator.Call(buffer, 7));
+  EXPECT_EQ(8, simulator.Call(buffer, 8));
+  EXPECT_EQ(9, simulator.Call(buffer, 9));
+  EXPECT_EQ(-7, simulator.Call(buffer, -7));
+  EXPECT_EQ(-8, simulator.Call(buffer, -8));
+  EXPECT_EQ(-1, simulator.Call(buffer, -9));
+}
+
+UNIT_TEST(BitSetImmediate2) {
+  Assembler assembler(RV_GCB);
+  __ bseti(A0, A0, XLEN - 1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+#if XLEN == 32
+  EXPECT_STREQ(
+      "  29f51513 bseti a0, a0, 0x1f\n"
+      "      8082 ret\n",
+      disassembly);
+#elif XLEN == 64
+  EXPECT_STREQ(
+      "  2bf51513 bseti a0, a0, 0x3f\n"
+      "      8082 ret\n",
+      disassembly);
+#endif
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(kMinIntX, simulator.Call(buffer, 0));
+  EXPECT_EQ(kMinIntX + 1, simulator.Call(buffer, 1));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1));
+}
+
 UNIT_TEST(MacroLoadImmediate_MaxInt32) {
   MacroAssembler assembler(RV_GC);
   __ LoadImmediate(A0, kMaxInt32);
