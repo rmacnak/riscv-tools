@@ -588,6 +588,12 @@ class Assembler {
   void bset(Register rd, Register rs1, Register rs2);
   void bseti(Register rd, Register rs1, intx_t shamt);
 
+  // ==== Zicond: Integer conditional operations ====
+  // rd := rs2 == 0 ? 0 : rs1
+  void czeroeqz(Register rd, Register rs1, Register rs2);
+  // rd := rs2 != 0 ? 0 : rs1
+  void czeronez(Register rd, Register rs1, Register rs2);
+
  private:
   // ==== RV32/64C ====
   void c_lwsp(Register rd, Address addr);

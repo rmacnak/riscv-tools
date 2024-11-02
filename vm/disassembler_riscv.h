@@ -68,6 +68,7 @@ class Disassembler {
   void DisassembleOP_MINMAXCLMUL(Instruction instr);
   void DisassembleOP_ROTATE(Instruction instr);
   void DisassembleOP_BCLRBEXT(Instruction instr);
+  void DisassembleOP_CZERO(Instruction instr);
   void DisassembleOP32(Instruction instr);
   void DisassembleOP32_0(Instruction instr);
   void DisassembleOP32_SUB(Instruction instr);

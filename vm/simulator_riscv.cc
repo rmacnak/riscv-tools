@@ -981,6 +981,9 @@ void Simulator::InterpretOP(Instruction instr) {
       pc_ += instr.length();
       break;
 #endif
+    case CZERO:
+      InterpretOP_CZERO(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
@@ -1296,6 +1299,22 @@ void Simulator::InterpretOP_BCLRBEXT(Instruction instr) {
       break;
     case BEXT:
       set_xreg(instr.rd(), bext(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
+      break;
+    default:
+      IllegalInstruction(instr);
+  }
+  pc_ += instr.length();
+}
+
+void Simulator::InterpretOP_CZERO(Instruction instr) {
+  switch (instr.funct3()) {
+    case CZEROEQZ:
+      set_xreg(instr.rd(), get_xreg(instr.rs2()) == 0 ? 0
+                                                      : get_xreg(instr.rs1()));
+      break;
+    case CZERONEZ:
+      set_xreg(instr.rd(), get_xreg(instr.rs2()) != 0 ? 0
+                                                      : get_xreg(instr.rs1()));
       break;
     default:
       IllegalInstruction(instr);

@@ -9310,6 +9310,50 @@ UNIT_TEST(BitSetImmediate2) {
   EXPECT_EQ(-1, simulator.Call(buffer, -1));
 }
 
+UNIT_TEST(ConditionalZeroIfEqualsZero) {
+  Assembler assembler(RV_GC | RV_Zicond);
+  __ czeroeqz(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zicond);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0eb55533 czero.eqz a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(42, simulator.Call(buffer, 42, -1));
+}
+
+UNIT_TEST(ConditionalZeroIfNotEqualsZero) {
+  Assembler assembler(RV_GC | RV_Zicond);
+  __ czeronez(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zicond);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  0eb57533 czero.nez a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(42, simulator.Call(buffer, 42, 0));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, 1));
+  EXPECT_EQ(0, simulator.Call(buffer, 42, -1));
+}
+
 UNIT_TEST(MacroLoadImmediate_LoadImmediates) {
   for (intptr_t base = -8; base < 7; base++) {
     for (intptr_t shift = 0; shift < XLEN; shift++) {

@@ -669,6 +669,9 @@ void Disassembler::DisassembleOP(Instruction instr) {
       Print("zext.h 'rd, 'rs1", instr, RV_Zbb);
       break;
 #endif
+    case CZERO:
+      DisassembleOP_CZERO(instr);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -836,6 +839,19 @@ void Disassembler::DisassembleOP_BCLRBEXT(Instruction instr) {
       break;
     case BEXT:
       Print("bext 'rd, 'rs1, 'rs2", instr, RV_Zbs);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOP_CZERO(Instruction instr) {
+  switch (instr.funct3()) {
+    case CZEROEQZ:
+      Print("czero.eqz 'rd, 'rs1, 'rs2", instr, RV_Zicond);
+      break;
+    case CZERONEZ:
+      Print("czero.nez 'rd, 'rs1, 'rs2", instr, RV_Zicond);
       break;
     default:
       UnknownInstruction(instr);

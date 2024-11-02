@@ -365,6 +365,9 @@ enum Funct3 {
   BEXT = 0b101,
   F3_BINV = 0b001,
   F3_BSET = 0b001,
+
+  CZEROEQZ = 0b101,
+  CZERONEZ = 0b111,
 };
 
 enum Funct7 {
@@ -412,6 +415,8 @@ enum Funct7 {
   BCLRBEXT = 0b0100100,
   BINV = 0b0110100,
   BSET = 0b0010100,
+
+  CZERO = 0b0000111,
 };
 
 enum Funct5 {
@@ -1056,6 +1061,7 @@ static constexpr Extension RV_Zbs(8);  // Single-bit instructions
 static constexpr ExtensionSet RV_B = RV_Zba | RV_Zbb | RV_Zbs;
 static constexpr ExtensionSet RV_GCB = RV_GC | RV_B;
 static constexpr Extension RV_Zbc(9);  // Carry-less multiplication
+static constexpr Extension RV_Zicond(10);  // Integer conditional operations
 
 }  // namespace psoup
 

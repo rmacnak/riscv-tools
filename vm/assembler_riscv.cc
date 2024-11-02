@@ -1539,6 +1539,16 @@ void Assembler::bseti(Register rd, Register rs1, intx_t shamt) {
   EmitRType(BSET, shamt, rs1, F3_BSET, rd, OPIMM);
 }
 
+void Assembler::czeroeqz(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zicond));
+  EmitRType(CZERO, rs2, rs1, CZEROEQZ, rd, OP);
+}
+
+void Assembler::czeronez(Register rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zicond));
+  EmitRType(CZERO, rs2, rs1, CZERONEZ, rd, OP);
+}
+
 void Assembler::c_lwsp(Register rd, Address addr) {
   ASSERT(rd != ZERO);
   ASSERT(addr.base() == SP);
