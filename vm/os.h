@@ -15,17 +15,18 @@ class OS {
   static void Shutdown();
 
   static int64_t CurrentMonotonicNanos();
+  static int64_t CurrentRealtimeNanos();
+
+  static intptr_t GetEntropy(void* buffer, size_t size);
 
   static const char* Name();
-  static int NumberOfAvailableProcessors();
-
-  static void DebugBreak();
+  static intptr_t NumberOfAvailableProcessors();
 
   static void Print(const char* format, ...) PRINTF_ATTRIBUTE(1, 2);
   static void PrintErr(const char* format, ...) PRINTF_ATTRIBUTE(1, 2);
   static char* PrintStr(const char* format, ...) PRINTF_ATTRIBUTE(1, 2);
 
-  NORETURN static void Abort();
+  static char* StrError(int err, char* buffer, size_t bufsize);
 
   NORETURN static void Exit(int code);
 };

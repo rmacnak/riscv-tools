@@ -1640,7 +1640,7 @@ const char* Disassembler::PrintOption(const char* format, Instruction instr) {
     return format + 4;
   }
 
-  FATAL1("Bad format %s\n", format);
+  FATAL("Bad format %s\n", format);
   return nullptr;
 }
 
@@ -1720,7 +1720,7 @@ const char* Disassembler::PrintOption(const char* format, CInstruction instr) {
     return format + 8;
   }
 
-  FATAL1("Bad format %s\n", format);
+  FATAL("Bad format %s\n", format);
   return nullptr;
 }
 

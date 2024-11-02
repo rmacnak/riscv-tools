@@ -7,12 +7,13 @@
 
 #include "vm/os.h"
 
-#include <android/log.h>  // NOLINT
-#include <errno.h>  // NOLINT
-#include <time.h>  // NOLINT
-#include <sys/time.h>  // NOLINT
-#include <sys/types.h>  // NOLINT
-#include <unistd.h>  // NOLINT
+#include <android/log.h>
+#include <errno.h>
+#include <sys/random.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "vm/assert.h"
 
@@ -20,7 +21,6 @@ namespace psoup {
 
 void OS::Startup() {}
 void OS::Shutdown() {}
-
 
 int64_t OS::CurrentMonotonicNanos() {
   struct timespec ts;
@@ -36,52 +36,65 @@ int64_t OS::CurrentMonotonicNanos() {
   return result;
 }
 
+int64_t OS::CurrentRealtimeNanos() {
+  struct timespec ts;
+  if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+    UNREACHABLE();
+    return 0;
+  }
+  // Convert to nanoseconds.
+  int64_t result = ts.tv_sec;
+  result *= kNanosecondsPerSecond;
+  result += ts.tv_nsec;
+
+  return result;
+}
+
+intptr_t OS::GetEntropy(void* buffer, size_t size) {
+  if (getentropy(buffer, size) == -1) {
+    return errno;
+  }
+  return 0;
+}
 
 const char* OS::Name() { return "android"; }
 
-
-int OS::NumberOfAvailableProcessors() {
+intptr_t OS::NumberOfAvailableProcessors() {
   return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
-
-void OS::DebugBreak() {
-  __builtin_trap();
-}
-
-
-static void VFPrint(FILE* stream, const char* format, va_list args) {
-  vfprintf(stream, format, args);
-  fflush(stream);
-}
-
-
 void OS::Print(const char* format, ...) {
   va_list args;
+
   va_start(args, format);
-  VFPrint(stdout, format, args);
-  // Forward to the Android log for remote access.
+  vfprintf(stdout, format, args);
+  fflush(stdout);
+  va_end(args);
+
+  va_start(args, format);
   __android_log_vprint(ANDROID_LOG_INFO, "PrimordialSoup", format, args);
   va_end(args);
 }
 
-
 void OS::PrintErr(const char* format, ...) {
   va_list args;
+
   va_start(args, format);
-  VFPrint(stderr, format, args);
-  // Forward to the Android log for remote access.
+  vfprintf(stderr, format, args);
+  fflush(stderr);
+  va_end(args);
+
+  va_start(args, format);
   __android_log_vprint(ANDROID_LOG_ERROR, "PrimordialSoup", format, args);
   va_end(args);
 }
-
 
 char* OS::PrintStr(const char* format, ...) {
   va_list args;
   va_start(args, format);
   va_list measure_args;
   va_copy(measure_args, args);
-  intptr_t len = vsnprintf(NULL, 0, format, measure_args);
+  intptr_t len = vsnprintf(nullptr, 0, format, measure_args);
   va_end(measure_args);
 
   char* buffer = reinterpret_cast<char*>(malloc(len + 1));
@@ -95,11 +108,12 @@ char* OS::PrintStr(const char* format, ...) {
   return buffer;
 }
 
-
-void OS::Abort() {
-  abort();
+char* OS::StrError(int err, char* buffer, size_t bufsize) {
+  if (strerror_r(err, buffer, bufsize) != 0) {
+    snprintf(buffer, bufsize, "%s", "strerror_r failed");
+  }
+  return buffer;
 }
-
 
 void OS::Exit(int code) {
   exit(code);

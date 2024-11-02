@@ -28,19 +28,19 @@ class Assert {
 
 }  // namespace psoup
 
-#define FATAL(error) psoup::Assert(__FILE__, __LINE__).Fail("%s", error)
-
-#define FATAL1(format, p1) psoup::Assert(__FILE__, __LINE__).Fail(format, (p1))
-
-#define FATAL2(format, p1, p2)                                                 \
-  psoup::Assert(__FILE__, __LINE__).Fail(format, (p1), (p2))
+#if defined(_MSC_VER)
+#define FATAL(format, ...)                                                     \
+  psoup::Assert(__FILE__, __LINE__).Fail(format, __VA_ARGS__)
+#else
+#define FATAL(format, ...)                                                     \
+  psoup::Assert(__FILE__, __LINE__).Fail(format, ##__VA_ARGS__)
+#endif
 
 #define UNIMPLEMENTED() FATAL("unimplemented code")
 
 #define UNREACHABLE() FATAL("unreachable code")
 
 #define OUT_OF_MEMORY() FATAL("Out of memory.")
-
 
 #if defined(DEBUG)
 // DEBUG binaries use assertions in the code.
@@ -71,16 +71,6 @@ class Assert {
 
 #endif  // if defined(DEBUG)
 
-#if !defined(COMPILE_ASSERT)
-template <bool>
-struct CompileAssert {
-};
-#define COMPILE_ASSERT_JOIN(a, b) COMPILE_ASSERT_JOIN_HELPER(a, b)
-#define COMPILE_ASSERT_JOIN_HELPER(a, b) a##b
-#define COMPILE_ASSERT(expr)                                                   \
-  ATTRIBUTE_UNUSED typedef CompileAssert<(static_cast<bool>(expr))>            \
-  COMPILE_ASSERT_JOIN(CompileAssertTypeDef, __LINE__)[static_cast<bool>(expr)  \
-  ? 1 : -1]
-#endif  // !defined(COMPILE_ASSERT)
+#define COMPILE_ASSERT(cond) static_assert(cond, "")
 
 #endif  // VM_ASSERT_H_

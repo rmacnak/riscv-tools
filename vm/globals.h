@@ -6,12 +6,17 @@
 #define VM_GLOBALS_H_
 
 #if defined(_WIN32)
+// Cut down on the amount of stuff that gets included via windows.h.
+#if !defined(WIN32_LEAN_AND_MEAN)
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <windows.h>
 #endif  // defined(_WIN32)
 
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,15 +47,13 @@
 #error Automatic OS detection failed.
 #endif
 
-
-#if defined(_M_X64) || (__SIZEOF_POINTER__ == 8)
+#if defined(_M_X64) || defined(_M_ARM64) || (__SIZEOF_POINTER__ == 8)
 #define ARCH_IS_64_BIT 1
-#elif defined(_M_IX86) || (__SIZEOF_POINTER__ == 4)
+#elif defined(_M_IX86) || defined(_M_ARM) || (__SIZEOF_POINTER__ == 4)
 #define ARCH_IS_32_BIT 1
 #else
 #error Unknown architecture.
 #endif
-
 
 // ATTRIBUTE_UNUSED indicates to the compiler that a variable/typedef is
 // expected to be unused and disables the related warning.
@@ -59,7 +62,6 @@
 #else
 #define ATTRIBUTE_UNUSED
 #endif
-
 
 // Short form printf format specifiers
 #if defined(OS_EMSCRIPTEN)
@@ -75,7 +77,6 @@
 #define Pu64 PRIu64
 #define Px64 PRIx64
 
-
 // Suffixes for 64-bit integer literals.
 #ifdef _MSC_VER
 #define PSOUP_INT64_C(x) x##I64
@@ -85,72 +86,72 @@
 #define PSOUP_UINT64_C(x) x##ULL
 #endif
 
-
 // The following macro works on both 32 and 64-bit platforms.
 // Usage: instead of writing 0x1234567890123456ULL
 //      write PSOUP_2PART_UINT64_C(0x12345678,90123456);
 #define PSOUP_2PART_UINT64_C(a, b)                                             \
-                 (((static_cast<uint64_t>(a) << 32) + 0x##b##u))
-
+  (((static_cast<uint64_t>(a) << 32) + 0x##b##u))
 
 // Integer constants.
-const int32_t kMinInt32 = 0x80000000;
-const int32_t kMaxInt32 = 0x7FFFFFFF;
-const uint32_t kMaxUint32 = 0xFFFFFFFF;
-const int64_t kMinInt64 = PSOUP_INT64_C(0x8000000000000000);
-const int64_t kMaxInt64 = PSOUP_INT64_C(0x7FFFFFFFFFFFFFFF);
-const uint64_t kMaxUint64 = PSOUP_2PART_UINT64_C(0xFFFFFFFF, FFFFFFFF);
-const int64_t kSignBitDouble = PSOUP_INT64_C(0x8000000000000000);
-
+constexpr int32_t kMinInt32 = 0x80000000;
+constexpr int32_t kMaxInt32 = 0x7FFFFFFF;
+constexpr uint32_t kMaxUint32 = 0xFFFFFFFF;
+constexpr int64_t kMinInt64 = PSOUP_INT64_C(0x8000000000000000);
+constexpr int64_t kMaxInt64 = PSOUP_INT64_C(0x7FFFFFFFFFFFFFFF);
+constexpr uint64_t kMaxUint64 = PSOUP_2PART_UINT64_C(0xFFFFFFFF, FFFFFFFF);
+constexpr int64_t kSignBitDouble = PSOUP_INT64_C(0x8000000000000000);
 
 // Types for native machine words. Guaranteed to be able to hold pointers and
 // integers.
 typedef intptr_t word;
 typedef uintptr_t uword;
 
+// Various toolchains are missing either std::nullptr_t or unqualified
+// nullptr_t, so we declare it ourselves.
+typedef decltype(nullptr) nullptr_t;
 
 // Byte sizes.
-const int kWordSize = sizeof(word);
-const int kDoubleSize = sizeof(double);  // NOLINT
-const int kFloatSize = sizeof(float);  // NOLINT
-const int kInt32Size = sizeof(int32_t);  // NOLINT
-const int kInt16Size = sizeof(int16_t);  // NOLINT
+constexpr size_t kWordSize = sizeof(word);
+constexpr size_t kDoubleSize = sizeof(double);
+constexpr size_t kFloatSize = sizeof(float);
+constexpr size_t kInt32Size = sizeof(int32_t);
+constexpr size_t kInt16Size = sizeof(int16_t);
 #if defined(ARCH_IS_32_BIT)
-const int kWordSizeLog2 = 2;
-const uword kUwordMax = kMaxUint32;
+constexpr size_t kWordSizeLog2 = 2;
+constexpr uword kUwordMax = kMaxUint32;
 #elif defined(ARCH_IS_64_BIT)
-const int kWordSizeLog2 = 3;
-const uword kUwordMax = kMaxUint64;
+constexpr size_t kWordSizeLog2 = 3;
+constexpr uword kUwordMax = kMaxUint64;
 #endif
 
 // Bit sizes.
-const int kBitsPerByte = 8;
-const int kBitsPerWord = kWordSize * kBitsPerByte;
+constexpr size_t kBitsPerByte = 8;
+constexpr size_t kBitsPerWord = kWordSize * kBitsPerByte;
 
 // System-wide named constants.
-const intptr_t KB = 1024;
-const intptr_t KBLog2 = 10;
-const intptr_t MB = KB * KB;
-const intptr_t MBLog2 = KBLog2 + KBLog2;
-const intptr_t GB = MB * KB;
-const intptr_t GBLog2 = MBLog2 + KBLog2;
+constexpr size_t KB = 1024;
+constexpr size_t KBLog2 = 10;
+constexpr size_t MB = KB * KB;
+constexpr size_t MBLog2 = KBLog2 + KBLog2;
+constexpr size_t GB = MB * KB;
+constexpr size_t GBLog2 = MBLog2 + KBLog2;
 
 // Time constants.
-const int kMillisecondsPerSecond = 1000;
-const int kMicrosecondsPerMillisecond = 1000;
-const int kMicrosecondsPerSecond = (kMicrosecondsPerMillisecond *
-                                    kMillisecondsPerSecond);
-const int kNanosecondsPerMicrosecond = 1000;
-const int kNanosecondsPerMillisecond = (kNanosecondsPerMicrosecond *
-                                        kMicrosecondsPerMillisecond);
-const int kNanosecondsPerSecond = (kNanosecondsPerMicrosecond *
-                                   kMicrosecondsPerSecond);
+constexpr int64_t kMillisecondsPerSecond = 1000;
+constexpr int64_t kMicrosecondsPerMillisecond = 1000;
+constexpr int64_t kMicrosecondsPerSecond = (kMicrosecondsPerMillisecond *
+                                            kMillisecondsPerSecond);
+constexpr int64_t kNanosecondsPerMicrosecond = 1000;
+constexpr int64_t kNanosecondsPerMillisecond = (kNanosecondsPerMicrosecond *
+                                                kMicrosecondsPerMillisecond);
+constexpr int64_t kNanosecondsPerSecond = (kNanosecondsPerMicrosecond *
+                                           kMicrosecondsPerSecond);
 
 // A macro to disallow the copy constructor and operator= functions.
 // This should be used in the private: declarations for a class.
 #if !defined(DISALLOW_COPY_AND_ASSIGN)
 #define DISALLOW_COPY_AND_ASSIGN(TypeName)                                     \
-private:                                                                       \
+ private:                                                                      \
   TypeName(const TypeName&);                                                   \
   void operator=(const TypeName&)
 #endif  // !defined(DISALLOW_COPY_AND_ASSIGN)
@@ -162,7 +163,7 @@ private:                                                                       \
 // containing only static methods.
 #if !defined(DISALLOW_IMPLICIT_CONSTRUCTORS)
 #define DISALLOW_IMPLICIT_CONSTRUCTORS(TypeName)                               \
-private:                                                                       \
+ private:                                                                      \
   TypeName();                                                                  \
   DISALLOW_COPY_AND_ASSIGN(TypeName)
 #endif  // !defined(DISALLOW_IMPLICIT_CONSTRUCTORS)
@@ -173,15 +174,15 @@ private:                                                                       \
 // platform/assert.h.
 #if !defined(DISALLOW_ALLOCATION)
 #define DISALLOW_ALLOCATION()                                                  \
-public:                                                                        \
+ public:                                                                       \
   void operator delete(void* pointer) {                                        \
     fprintf(stderr, "unreachable code\n");                                     \
     abort();                                                                   \
   }                                                                            \
-private:                                                                       \
+                                                                               \
+ private:                                                                      \
   void* operator new(size_t size)
 #endif  // !defined(DISALLOW_ALLOCATION)
-
 
 // The type-based aliasing rule allows the compiler to assume that
 // pointers of different types (for some definition of different)
@@ -210,17 +211,14 @@ private:                                                                       \
 // type to another thus avoiding the warning.
 template <class D, class S>
 inline D bit_cast(const S& source) {
-  // Compile time assertion: sizeof(D) == sizeof(S). A compile error
-  // here means your D and S have different sizes.
-  ATTRIBUTE_UNUSED
-  typedef char VerifySizesAreEqual[sizeof(D) == sizeof(S) ? 1 : -1];
+  static_assert(sizeof(D) == sizeof(S),
+                "Destination and source of bit_cast must have the same size");
 
   D destination;
   // This use of memcpy is safe: source and destination cannot overlap.
   memcpy(&destination, &source, sizeof(destination));
   return destination;
 }
-
 
 #if defined(__GNUC__) || defined(__clang__)
 // Tell the compiler to do printf format string checking if the
@@ -230,7 +228,7 @@ inline D bit_cast(const S& source) {
 // N.B.: As the GCC manual states, "[s]ince non-static C++ methods
 // have an implicit 'this' argument, the arguments of such methods
 // should be counted from two, not one."
-#define PRINTF_ATTRIBUTE(string_index, first_to_check) \
+#define PRINTF_ATTRIBUTE(string_index, first_to_check)                         \
   __attribute__((__format__(__printf__, string_index, first_to_check)))
 #else
 #define PRINTF_ATTRIBUTE(string_index, first_to_check)

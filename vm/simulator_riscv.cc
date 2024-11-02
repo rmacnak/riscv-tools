@@ -2499,12 +2499,12 @@ enum ControlStatusRegister {
 
 void Simulator::IllegalInstruction(Instruction instr) {
   PrintRegisters();
-  FATAL1("Illegal instruction: 0x%08x", instr.encoding());
+  FATAL("Illegal instruction: 0x%08x", instr.encoding());
 }
 
 void Simulator::IllegalInstruction(CInstruction instr) {
   PrintRegisters();
-  FATAL1("Illegal instruction: 0x%04x", instr.encoding());
+  FATAL("Illegal instruction: 0x%04x", instr.encoding());
 }
 
 intx_t Simulator::CSRRead(uint16_t csr) {
@@ -2526,7 +2526,7 @@ intx_t Simulator::CSRRead(uint16_t csr) {
       return instret_ >> 32;
 #endif
     default:
-      FATAL1("Unknown CSR: %d", csr);
+      FATAL("Unknown CSR: %d", csr);
   }
 }
 

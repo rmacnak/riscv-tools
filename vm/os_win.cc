@@ -7,6 +7,7 @@
 
 #include "vm/os.h"
 
+#include <bcrypt.h>
 #include <malloc.h>
 #include <process.h>
 #include <time.h>
@@ -16,9 +17,7 @@
 
 namespace psoup {
 
-
 static int64_t qpc_ticks_per_second = 0;
-
 
 static int64_t GetCurrentMonotonicTicks() {
   if (qpc_ticks_per_second == 0) {
@@ -30,7 +29,6 @@ static int64_t GetCurrentMonotonicTicks() {
   return static_cast<int64_t>(now.QuadPart);
 }
 
-
 static int64_t GetCurrentMonotonicFrequency() {
   if (qpc_ticks_per_second == 0) {
     FATAL("QueryPerformanceCounter not supported");
@@ -38,6 +36,16 @@ static int64_t GetCurrentMonotonicFrequency() {
   return qpc_ticks_per_second;
 }
 
+intptr_t OS::GetEntropy(void* buffer, size_t size) {
+  if (size <= 0) {
+    return 0;
+  }
+  NTSTATUS status = BCryptGenRandom(nullptr,
+                                    reinterpret_cast<PUCHAR>(buffer),
+                                    static_cast<ULONG>(size),
+                                    BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+  return status >= 0 ? 0 : 1;
+}
 
 int64_t OS::CurrentMonotonicNanos() {
   int64_t ticks = GetCurrentMonotonicTicks();
@@ -51,37 +59,36 @@ int64_t OS::CurrentMonotonicNanos() {
   return result;
 }
 
+int64_t OS::CurrentRealtimeNanos() {
+  static const int64_t kTimeEpoc = 116444736000000000LL;
+  static const int64_t kTimeScaler = 100;  // 100 ns to ns.
+  // Although win32 uses 64-bit integers for representing timestamps,
+  // these are packed into a FILETIME structure. The FILETIME
+  // structure is just a struct representing a 64-bit integer. The
+  // TimeStamp union allows access to both a FILETIME and an integer
+  // representation of the timestamp. The Windows timestamp is in
+  // 100-nanosecond intervals since January 1, 1601.
+  union TimeStamp {
+    FILETIME ft_;
+    int64_t t_;
+  };
+  TimeStamp time;
+  GetSystemTimeAsFileTime(&time.ft_);
+  return (time.t_ - kTimeEpoc) * kTimeScaler;
+}
 
 const char* OS::Name() { return "windows"; }
 
-
-int OS::NumberOfAvailableProcessors() {
+intptr_t OS::NumberOfAvailableProcessors() {
   SYSTEM_INFO info;
   GetSystemInfo(&info);
   return info.dwNumberOfProcessors;
 }
 
-
-void OS::DebugBreak() {
-#if defined(_MSC_VER)
-  // Microsoft Visual C/C++ or drop-in replacement.
-  __debugbreak();
-#elif defined(__GCC__)
-  __builtin_trap();
-#else
-  // Microsoft style assembly.
-  __asm {
-    int 3
-  }
-#endif
-}
-
-
 static void VFPrint(FILE* stream, const char* format, va_list args) {
   vfprintf(stream, format, args);
   fflush(stream);
 }
-
 
 void OS::Print(const char* format, ...) {
   va_list args;
@@ -90,7 +97,6 @@ void OS::Print(const char* format, ...) {
   va_end(args);
 }
 
-
 void OS::PrintErr(const char* format, ...) {
   va_list args;
   va_start(args, format);
@@ -98,12 +104,11 @@ void OS::PrintErr(const char* format, ...) {
   va_end(args);
 }
 
-
 static int VSNPrint(char* str, size_t size, const char* format, va_list args) {
-  if (str == NULL || size == 0) {
+  if (str == nullptr || size == 0) {
     int retval = _vscprintf(format, args);
     if (retval < 0) {
-      FATAL1("Fatal error in OS::VSNPrint with format '%s'", format);
+      FATAL("Fatal error in OS::VSNPrint with format '%s'", format);
     }
     return retval;
   }
@@ -119,7 +124,7 @@ static int VSNPrint(char* str, size_t size, const char* format, va_list args) {
     va_copy(args_retry, args);
     written = _vscprintf(format, args_retry);
     if (written < 0) {
-      FATAL1("Fatal error in OS::VSNPrint with format '%s'", format);
+      FATAL("Fatal error in OS::VSNPrint with format '%s'", format);
     }
     va_end(args_retry);
   }
@@ -133,13 +138,12 @@ static int VSNPrint(char* str, size_t size, const char* format, va_list args) {
   return written;
 }
 
-
 char* OS::PrintStr(const char* format, ...) {
   va_list args;
   va_start(args, format);
   va_list measure_args;
   va_copy(measure_args, args);
-  intptr_t len = VSNPrint(NULL, 0, format, measure_args);
+  intptr_t len = VSNPrint(nullptr, 0, format, measure_args);
   va_end(measure_args);
 
   char* buffer = reinterpret_cast<char*>(malloc(len + 1));
@@ -153,14 +157,25 @@ char* OS::PrintStr(const char* format, ...) {
   return buffer;
 }
 
+char* OS::StrError(int err, char* buffer, size_t bufsize) {
+  DWORD message_size =
+      FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                    buffer, static_cast<DWORD>(bufsize), nullptr);
+  if (message_size == 0) {
+    if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+      snprintf(buffer, bufsize,
+               "FormatMessage failed for error code %d (error %d)\n", err,
+               GetLastError());
+    }
+    snprintf(buffer, bufsize, "OS Error %d", err);
+  }
+  // Ensure string termination.
+  buffer[bufsize - 1] = 0;
+  return buffer;
+}
 
 void OS::Startup() {
-  // TODO(5411554): For now we check that initonce is called only once,
-  // Once there is more formal mechanism to call Startup we can move
-  // this check there.
-  static bool init_once_called = false;
-  ASSERT(init_once_called == false);
-  init_once_called = true;
   // Do not pop up a message box when abort is called.
   _set_abort_behavior(0, _WRITE_ABORT_MSG);
   LARGE_INTEGER ticks_per_sec;
@@ -171,14 +186,7 @@ void OS::Startup() {
   }
 }
 
-
 void OS::Shutdown() {}
-
-
-void OS::Abort() {
-  abort();
-}
-
 
 void OS::Exit(int code) {
   // On Windows we use ExitProcess so that threads can't clobber the exit_code.

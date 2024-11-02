@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/random.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -19,40 +20,30 @@
 
 namespace psoup {
 
-static mach_timebase_info_data_t timebase_info;
-
-
-void OS::Startup() {
-  kern_return_t kr = mach_timebase_info(&timebase_info);
-  ASSERT(KERN_SUCCESS == kr);
-}
-
+void OS::Startup() {}
 
 void OS::Shutdown() {}
 
-
 int64_t OS::CurrentMonotonicNanos() {
-  ASSERT(timebase_info.denom != 0);
-  // timebase_info converts absolute time tick units into nanoseconds.
-  int64_t result = mach_absolute_time();
-  result *= timebase_info.numer;
-  result /= timebase_info.denom;
-  return result;
+  return clock_gettime_nsec_np(CLOCK_MONOTONIC);
 }
 
+int64_t OS::CurrentRealtimeNanos() {
+  return clock_gettime_nsec_np(CLOCK_REALTIME);
+}
+
+intptr_t OS::GetEntropy(void* buffer, size_t size) {
+  if (getentropy(buffer, size) == -1) {
+    return errno;
+  }
+  return 0;
+}
 
 const char* OS::Name() { return "macos"; }
 
-
-int OS::NumberOfAvailableProcessors() {
+intptr_t OS::NumberOfAvailableProcessors() {
   return sysconf(_SC_NPROCESSORS_ONLN);
 }
-
-
-void OS::DebugBreak() {
-  __builtin_trap();
-}
-
 
 static void VFPrint(FILE* stream, const char* format, va_list args) {
   vfprintf(stream, format, args);
@@ -66,7 +57,6 @@ void OS::Print(const char* format, ...) {
   va_end(args);
 }
 
-
 void OS::PrintErr(const char* format, ...) {
   va_list args;
   va_start(args, format);
@@ -74,13 +64,12 @@ void OS::PrintErr(const char* format, ...) {
   va_end(args);
 }
 
-
 char* OS::PrintStr(const char* format, ...) {
   va_list args;
   va_start(args, format);
   va_list measure_args;
   va_copy(measure_args, args);
-  intptr_t len = vsnprintf(NULL, 0, format, measure_args);
+  intptr_t len = vsnprintf(nullptr, 0, format, measure_args);
   va_end(measure_args);
 
   char* buffer = reinterpret_cast<char*>(malloc(len + 1));
@@ -94,11 +83,12 @@ char* OS::PrintStr(const char* format, ...) {
   return buffer;
 }
 
-
-void OS::Abort() {
-  abort();
+char* OS::StrError(int err, char* buffer, size_t bufsize) {
+  if (strerror_r(err, buffer, bufsize) != 0) {
+    snprintf(buffer, bufsize, "%s", "strerror_r failed");
+  }
+  return buffer;
 }
-
 
 void OS::Exit(int code) {
   exit(code);
