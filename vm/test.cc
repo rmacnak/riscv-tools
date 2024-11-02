@@ -8776,14 +8776,14 @@ UNIT_TEST(ByteReverse) {
 }
 
 UNIT_TEST(CarrylessMultiply) {
-  Assembler assembler(RV_GCB);
+  Assembler assembler(RV_GC | RV_Zbc);
   __ clmul(A0, A0, A1);
   __ ret();
 
   void* buffer = assembler.buffer();
   size_t size = assembler.size();
 
-  Disassembler disassembler(RV_GCB);
+  Disassembler disassembler(RV_GC | RV_Zbc);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
       "  0ab51533 clmul a0, a0, a1\n"
@@ -8813,14 +8813,14 @@ UNIT_TEST(CarrylessMultiply) {
 }
 
 UNIT_TEST(CarrylessMultiplyHigh) {
-  Assembler assembler(RV_GCB);
+  Assembler assembler(RV_GC | RV_Zbc);
   __ clmulh(A0, A0, A1);
   __ ret();
 
   void* buffer = assembler.buffer();
   size_t size = assembler.size();
 
-  Disassembler disassembler(RV_GCB);
+  Disassembler disassembler(RV_GC | RV_Zbc);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
       "  0ab53533 clmulh a0, a0, a1\n"
@@ -8850,14 +8850,14 @@ UNIT_TEST(CarrylessMultiplyHigh) {
 }
 
 UNIT_TEST(CarrylessMultiplyReversed) {
-  Assembler assembler(RV_GCB);
+  Assembler assembler(RV_GC | RV_Zbc);
   __ clmulr(A0, A0, A1);
   __ ret();
 
   void* buffer = assembler.buffer();
   size_t size = assembler.size();
 
-  Disassembler disassembler(RV_GCB);
+  Disassembler disassembler(RV_GC | RV_Zbc);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
       "  0ab52533 clmulr a0, a0, a1\n"

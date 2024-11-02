@@ -1511,6 +1511,10 @@ void Disassembler::Print(const char* format,
     }
   }
 
+  if (!Supports(ex)) {
+    buffer_.Print("  ; from unsupported extension");
+  }
+
   buffer_.Print("\n");
 }
 
@@ -1526,6 +1530,10 @@ void Disassembler::Print(const char* format,
       buffer_.Print("%c", format[0]);
       format++;
     }
+  }
+
+  if (!Supports(ex)) {
+    buffer_.Print("  ; from unsupported extension");
   }
 
   buffer_.Print("\n");
