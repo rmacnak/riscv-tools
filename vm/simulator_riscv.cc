@@ -427,11 +427,10 @@ void Simulator::Interpret(CInstruction instr) {
       }
       break;
     case C_SLLI:
-      if (instr.i_imm() == 0) {
+      if (instr.rd() == ZERO) {
         IllegalInstruction(instr);
       } else {
-        set_xreg(instr.rd(), get_xreg(instr.rs1())
-                                 << (instr.i_imm() & (XLEN - 1)));
+        set_xreg(instr.rd(), get_xreg(instr.rs1()) << instr.shamt());
       }
       break;
     case C_MISCALU:
@@ -439,20 +438,19 @@ void Simulator::Interpret(CInstruction instr) {
       // so use rs1′ instead.
       switch (instr.encoding() & C_MISCALU_MASK) {
         case C_SRLI:
-          if (instr.i_imm() == 0) {
+          if (instr.shamt() >= XLEN) {
             IllegalInstruction(instr);
           } else {
-            set_xreg(instr.rs1p(),
-                     get_xreg(instr.rs1p()) >> (instr.i_imm() & (XLEN - 1)));
+            set_xreg(instr.rs1p(),  get_xreg(instr.rs1p()) >> instr.shamt());
           }
           break;
         case C_SRAI:
-          if (instr.i_imm() == 0) {
+          if (instr.shamt() >= XLEN) {
             IllegalInstruction(instr);
           } else {
             set_xreg(instr.rs1p(),
                      static_cast<intx_t>(get_xreg(instr.rs1p())) >>
-                         (instr.i_imm() & (XLEN - 1)));
+                         instr.i_imm());
           }
           break;
         case C_ANDI:

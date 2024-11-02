@@ -850,7 +850,7 @@ inline intx_t DecodeCBImm(uint32_t encoding) {
 }
 
 inline bool IsCIImm(intptr_t imm) {
-  return Utils::IsInt(6, imm) && Utils::IsAligned(imm, 1);
+  return Utils::IsInt(6, imm);
 }
 inline uint32_t EncodeCIImm(intptr_t imm) {
   ASSERT(IsCIImm(imm));
@@ -924,6 +924,23 @@ inline intx_t DecodeCI4SPNImm(uint32_t encoding) {
   imm |= ((encoding >> 7) & 0xF) << 6;
   imm |= ((encoding >> 6) & 0x1) << 2;
   imm |= ((encoding >> 5) & 0x1) << 3;
+  return imm;
+}
+
+inline bool IsCShamt(uint32_t imm) {
+  return imm < XLEN;
+}
+inline uint32_t EncodeCShamt(uint32_t imm) {
+  ASSERT(IsCShamt(imm));
+  uint32_t encoding = 0;
+  encoding |= ((imm >> 5) & 0x1) << 12;
+  encoding |= ((imm >> 0) & 0x1F) << 2;
+  return encoding;
+}
+inline uint32_t DecodeCShamt(uint32_t encoding) {
+  uint32_t imm = 0;
+  imm |= ((encoding >> 12) & 0x1) << 5;
+  imm |= ((encoding >> 2) & 0x1F) << 0;
   return imm;
 }
 
@@ -1017,6 +1034,8 @@ class CInstruction {
   intx_t u_imm() { return DecodeCUImm(encoding_); }
   intx_t i16_imm() { return DecodeCI16Imm(encoding_); }
   intx_t i4spn_imm() { return DecodeCI4SPNImm(encoding_); }
+
+  uint32_t shamt() { return DecodeCShamt(encoding_); }
 
  private:
   const uint16_t encoding_;

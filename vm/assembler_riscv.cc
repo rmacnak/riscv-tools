@@ -327,7 +327,7 @@ void Assembler::slli(Register rd, Register rs1, intptr_t shamt) {
   ASSERT((shamt > 0) && (shamt < XLEN));
   ASSERT(Supports(RV_I));
   if (Supports(RV_C)) {
-    if ((rd == rs1) && (shamt != 0)) {
+    if ((rd == rs1) && (rd != ZERO) && IsCShamt(shamt)) {
       c_slli(rd, rs1, shamt);
       return;
     }
@@ -339,7 +339,7 @@ void Assembler::srli(Register rd, Register rs1, intptr_t shamt) {
   ASSERT((shamt > 0) && (shamt < XLEN));
   ASSERT(Supports(RV_I));
   if (Supports(RV_C)) {
-    if ((rd == rs1) && IsCRs1p(rs1) && (shamt != 0)) {
+    if ((rd == rs1) && IsCRs1p(rs1) && IsCShamt(shamt)) {
       c_srli(rd, rs1, shamt);
       return;
     }
@@ -351,7 +351,7 @@ void Assembler::srai(Register rd, Register rs1, intptr_t shamt) {
   ASSERT((shamt > 0) && (shamt < XLEN));
   ASSERT(Supports(RV_I));
   if (Supports(RV_C)) {
-    if ((rd == rs1) && IsCRs1p(rs1) && (shamt != 0)) {
+    if ((rd == rs1) && IsCRs1p(rs1) && IsCShamt(shamt)) {
       c_srai(rd, rs1, shamt);
       return;
     }
@@ -1724,22 +1724,20 @@ void Assembler::c_addi4spn(Register rdp, Register rs1, intptr_t imm) {
 void Assembler::c_slli(Register rd, Register rs1, intptr_t imm) {
   ASSERT(Supports(RV_C));
   ASSERT(rd == rs1);
-  ASSERT(imm != 0);
-  Emit16(C_SLLI | EncodeCRd(rd) | EncodeCIImm(imm));
+  ASSERT(rd != ZERO);
+  Emit16(C_SLLI | EncodeCRd(rd) | EncodeCShamt(imm));
 }
 
 void Assembler::c_srli(Register rd, Register rs1, intptr_t imm) {
   ASSERT(Supports(RV_C));
   ASSERT(rd == rs1);
-  ASSERT(imm != 0);
-  Emit16(C_SRLI | EncodeCRs1p(rd) | EncodeCIImm(imm));
+  Emit16(C_SRLI | EncodeCRs1p(rd) | EncodeCShamt(imm));
 }
 
 void Assembler::c_srai(Register rd, Register rs1, intptr_t imm) {
   ASSERT(Supports(RV_C));
   ASSERT(rd == rs1);
-  ASSERT(imm != 0);
-  Emit16(C_SRAI | EncodeCRs1p(rd) | EncodeCIImm(imm));
+  Emit16(C_SRAI | EncodeCRs1p(rd) | EncodeCShamt(imm));
 }
 
 void Assembler::c_andi(Register rd, Register rs1, intptr_t imm) {

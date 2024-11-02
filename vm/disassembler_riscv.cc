@@ -277,26 +277,26 @@ void Disassembler::DisassembleInstruction(CInstruction instr) {
       }
       break;
     case C_SLLI:
-      if (instr.i_imm() == 0) {
+      if (instr.rd() == ZERO) {
         UnknownInstruction(instr);
       } else {
-        Print("slli 'rd, 'rs1, 'iimm", instr, RV_C);
+        Print("slli 'rd, 'rs1, 'shamt", instr, RV_C);
       }
       break;
     case C_MISCALU:
       switch (instr.encoding() & C_MISCALU_MASK) {
         case C_SRLI:
-          if (instr.i_imm() == 0) {
+          if (instr.shamt() >= XLEN) {
             UnknownInstruction(instr);
           } else {
-            Print("srli 'rs1p, 'rs1p, 'iimm", instr, RV_C);
+            Print("srli 'rs1p, 'rs1p, 'shamt", instr, RV_C);
           }
           break;
         case C_SRAI:
-          if (instr.i_imm() == 0) {
+          if (instr.shamt() >= XLEN) {
             UnknownInstruction(instr);
           } else {
-            Print("srai 'rs1p, 'rs1p, 'iimm", instr, RV_C);
+            Print("srai 'rs1p, 'rs1p, 'shamt", instr, RV_C);
           }
           break;
         case C_ANDI:
@@ -1726,6 +1726,9 @@ const char* Disassembler::PrintOption(const char* format, CInstruction instr) {
   } else if (STRING_STARTS_WITH(format, "i4spnimm")) {
     buffer_.Print("%" Pd, static_cast<intptr_t>(instr.i4spn_imm()));
     return format + 8;
+  } else if (STRING_STARTS_WITH(format, "shamt")) {
+    buffer_.Print("0x%x", instr.shamt());
+    return format + 5;
   }
 
   FATAL("Bad format %s\n", format);

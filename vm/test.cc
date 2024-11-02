@@ -7574,7 +7574,7 @@ UNIT_TEST(CompressedShiftLeftLogicalImmediate) {
   Disassembler disassembler(RV_GC);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
-      "      050e slli a0, a0, 3\n"
+      "      050e slli a0, a0, 0x3\n"
       "      8082 ret\n",
       disassembly);
   free(disassembly);
@@ -7598,7 +7598,7 @@ UNIT_TEST(CompressedShiftRightLogicalImmediate) {
   Disassembler disassembler(RV_GC);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
-      "      810d srli a0, a0, 3\n"
+      "      810d srli a0, a0, 0x3\n"
       "      8082 ret\n",
       disassembly);
   free(disassembly);
@@ -7624,7 +7624,7 @@ UNIT_TEST(CompressedShiftRightArithmeticImmediate) {
   Disassembler disassembler(RV_GC);
   char* disassembly = disassembler.Disassemble(buffer, size);
   EXPECT_STREQ(
-      "      850d srai a0, a0, 3\n"
+      "      850d srai a0, a0, 0x3\n"
       "      8082 ret\n",
       disassembly);
   free(disassembly);
@@ -7636,6 +7636,86 @@ UNIT_TEST(CompressedShiftRightArithmeticImmediate) {
   EXPECT_EQ(-6, simulator.Call(buffer, -42));
   EXPECT_EQ(-248, simulator.Call(buffer, -1984));
 }
+
+#if XLEN >= 64
+UNIT_TEST(CompressedShiftLeftLogicalImmediate32) {
+  Assembler assembler(RV_GC);
+  __ slli(A0, A0, 32);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      1502 slli a0, a0, 0x20\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(42) << 32),
+            simulator.Call(buffer, 42));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(1984) << 32),
+            simulator.Call(buffer, 1984));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(-42) << 32),
+            simulator.Call(buffer, -42));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(-1984) << 32),
+            simulator.Call(buffer, -1984));
+}
+
+UNIT_TEST(CompressedShiftRightLogicalImmediate32) {
+  Assembler assembler(RV_GC);
+  __ srli(A0, A0, 32);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9101 srli a0, a0, 0x20\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(42, simulator.Call(buffer, static_cast<uintx_t>(42) << 32));
+  EXPECT_EQ(1984, simulator.Call(buffer, static_cast<uintx_t>(1984) << 32));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(static_cast<uint32_t>(-42))),
+            simulator.Call(buffer, static_cast<uintx_t>(-42) << 32));
+  EXPECT_EQ(static_cast<intx_t>(static_cast<uintx_t>(static_cast<uint32_t>(-1984))),
+            simulator.Call(buffer, static_cast<uintx_t>(-1984) << 32));
+}
+
+UNIT_TEST(CompressedShiftRightArithmeticImmediate32) {
+  Assembler assembler(RV_GC);
+  __ srai(A0, A0, 32);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9501 srai a0, a0, 0x20\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(42, simulator.Call(buffer, static_cast<uintx_t>(42) << 32));
+  EXPECT_EQ(1984, simulator.Call(buffer, static_cast<uintx_t>(1984) << 32));
+  EXPECT_EQ(-42, simulator.Call(buffer, static_cast<uintx_t>(-42) << 32));
+  EXPECT_EQ(-1984, simulator.Call(buffer, static_cast<uintx_t>(-1984) << 32));
+}
+#endif  // XLEN >= 64
 
 UNIT_TEST(CompressedAndImmediate) {
   Assembler assembler(RV_GC);
@@ -9439,6 +9519,7 @@ TEST_ENCODING(intptr_t, CIImm)
 TEST_ENCODING(intptr_t, CUImm)
 TEST_ENCODING(intptr_t, CI16Imm)
 TEST_ENCODING(intptr_t, CI4SPNImm)
+TEST_ENCODING(intptr_t, CShamt)
 
 #undef TEST_ENCODING
 
