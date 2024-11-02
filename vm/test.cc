@@ -9310,6 +9310,23 @@ UNIT_TEST(BitSetImmediate2) {
   EXPECT_EQ(-1, simulator.Call(buffer, -1));
 }
 
+UNIT_TEST(MacroLoadImmediate_LoadImmediates) {
+  for (intptr_t base = -8; base < 7; base++) {
+    for (intptr_t shift = 0; shift < XLEN; shift++) {
+      for (intptr_t offset = -16; offset < 15; offset++) {
+        intx_t imm = (base << shift) + offset;
+
+        MacroAssembler assembler(RV_GCB);
+        __ LoadImmediate(A0, imm);
+        __ ret();
+
+        Simulator simulator;
+        EXPECT_EQ(imm, simulator.Call(assembler.buffer()));
+      }
+    }
+  }
+}
+
 UNIT_TEST(MacroLoadImmediate_MaxInt32) {
   MacroAssembler assembler(RV_GC);
   __ LoadImmediate(A0, kMaxInt32);
@@ -9329,7 +9346,7 @@ UNIT_TEST(MacroLoadImmediate_MaxInt32) {
 #elif XLEN == 64
   EXPECT_STREQ(
       "  80000537 lui a0, -2147483648\n"
-      "      357d addiw a0, a0, -1\n"
+      "  fff54513 not a0, a0\n"
       "      8082 ret\n",
       disassembly);
 #endif
@@ -9358,6 +9375,49 @@ UNIT_TEST(MacroLoadImmediate_MinInt32) {
   Simulator simulator;
   EXPECT_EQ(kMinInt32, simulator.Call(buffer));
 }
+
+#if XLEN >= 64
+UNIT_TEST(MacroLoadImmediate_MinInt64) {
+  MacroAssembler assembler(RV_GCB);
+  __ LoadImmediate(A0, kMinInt64);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  2bf01513 bseti a0, zero, 0x3f\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(kMinInt64, simulator.Call(buffer));
+}
+
+UNIT_TEST(MacroLoadImmediate_MaxInt64) {
+  MacroAssembler assembler(RV_GCB);
+  __ LoadImmediate(A0, kMaxInt64);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  2bf01513 bseti a0, zero, 0x3f\n"
+      "      157d addi a0, a0, -1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(kMaxInt64, simulator.Call(buffer));
+}
+#endif  // XLEN >= 64
 
 UNIT_TEST(MacroAddBranchOverflow) {
   MacroAssembler assembler(RV_GC);
@@ -9526,7 +9586,7 @@ TEST_ENCODING(intptr_t, CShamt)
 }  // namespace psoup
 
 int main(int argc, char** argv) {
-  psoup::Memory::Startup(4 * MB);
+  psoup::Memory::Startup(128 * MB);
   for (psoup::UnitTest* test = psoup::tests_; test != nullptr;
        test = test->next()) {
     test->Run();

@@ -12,6 +12,13 @@ namespace psoup {
 constexpr Register TMP = A5;
 constexpr Register TMP2 = A6;
 
+inline intx_t ImmLo(intx_t imm) {
+  return imm << (XLEN - 12) >> (XLEN - 12);
+}
+inline intx_t ImmHi(intx_t imm) {
+  return imm - ImmLo(imm);
+}
+
 // Higher level functions that may produce multiple instructions.
 class MacroAssembler : public Assembler {
  public:
@@ -30,40 +37,67 @@ class MacroAssembler : public Assembler {
   }
 
   void LoadImmediate(Register rd, intx_t imm) {
-#if XLEN > 32
-    ASSERT(Utils::IsInt(32, imm));
-#endif
-    intx_t lo = imm << (XLEN - 12) >> (XLEN - 12);
-    intx_t hi = (imm - lo) << (XLEN - 32) >> (XLEN - 32);
+    intx_t lo = ImmLo(imm);
+    intx_t hi = ImmHi(imm);
+    uintx_t uhi = hi;
     if (hi == 0) {
-      addi(rd, ZERO, lo);
-    } else {
+      addi(rd, ZERO, imm);
+    } else if (IsUTypeImm(hi)) {
       lui(rd, hi);
       if (lo != 0) {
-#if XLEN == 32
         addi(rd, rd, lo);
-#else
-        addiw(rd, rd, lo);
-#endif
+      }
+    } else if (IsUTypeImm(imm ^ lo)) {
+      lui(rd, imm ^ lo);
+      xori(rd, rd, lo);
+    } else if (Supports(RV_Zbs) && Utils::IsPowerOfTwo(uhi)) {
+      bseti(rd, ZERO, Utils::ShiftForPowerOfTwo(uhi));
+      if (lo != 0) {
+        addi(rd, rd, lo);
+      }
+    } else {
+      int shift = 12;
+      while ((hi >> (shift + 1) << (shift + 1)) == hi) {
+        shift++;
+      }
+      LoadImmediate(rd, hi >> shift);
+      slli(rd, rd, shift);
+      if (lo != 0) {
+        addi(rd, rd, lo);
       }
     }
   }
 
-  void Load(Register rd, Address address) {
+  Address PrepareLargeOffset(Address address) {
     if (IsITypeImm(address.offset())) {
-      lx(rd, address);
+      return address;
     } else {
-      int32_t offset = address.offset();
-      int32_t lo = offset << 20 >> 20;  // Sign extend low 12 bits.
-      int32_t hi = offset - lo;
+      intx_t lo = ImmLo(address.offset());
+      intx_t hi = ImmHi(address.offset());
       lui(TMP, hi);
       add(TMP, TMP, address.base());
-      lx(rd, Address(TMP, lo));
+      return Address(TMP, lo);
+    }
+  }
+
+  void Load(Register rd, Address address) {
+    lx(rd, PrepareLargeOffset(address));
+  }
+
+  void Store(Register rs, Address address) {
+    sx(rs, PrepareLargeOffset(address));
+  }
+
+  void Move(Register rd, Register rs) {
+    if (rd != rs) {
+      mv(rd, rs);
     }
   }
 
   void AddImmediate(Register rd, Register rs1, intptr_t imm) {
-    if (IsITypeImm(imm)) {
+    if (imm == 0) {
+      Move(rd, rs1);
+    } else if (IsITypeImm(imm)) {
       addi(rd, rs1, imm);
     } else {
       ASSERT(rs1 != TMP);
@@ -73,7 +107,9 @@ class MacroAssembler : public Assembler {
   }
 
   void SubImmediate(Register rd, Register rs1, intptr_t imm) {
-    if (IsITypeImm(-imm)) {
+    if (imm == 0) {
+      Move(rd, rs1);
+    } else if (IsITypeImm(-imm)) {
       addi(rd, rs1, -imm);
     } else {
       ASSERT(rs1 != TMP);
@@ -82,9 +118,37 @@ class MacroAssembler : public Assembler {
     }
   }
 
+  void MulImmediate(Register rd, Register rs1, intptr_t imm) {
+    if (imm == 1) {
+      Move(rd, rs1);
+    } else if (Utils::IsPowerOfTwo(imm)) {
+      slli(rd, rs1, Utils::ShiftForPowerOfTwo(imm));
+    } else {
+      LoadImmediate(TMP, imm);
+      mul(rd, rs1, TMP);
+    }
+  }
+
   void AndImmediate(Register rd, Register rs1, intptr_t imm) {
-    if (IsITypeImm(imm)) {
+    uintx_t uimm = imm;
+    if (imm == -1) {
+      Move(rd, rs1);
+#if XLEN >= 64
+    } else if (static_cast<int32_t>(imm) == -1) {
+      sextw(rd, rs1);
+#endif
+    } else if (IsITypeImm(imm)) {
       andi(rd, rs1, imm);
+    } else if (Supports(RV_Zbs) && Utils::IsPowerOfTwo(~uimm)) {
+      bclri(rd, rs1, Utils::ShiftForPowerOfTwo(~uimm));
+    } else if (Utils::IsPowerOfTwo(uimm + 1)) {
+      intptr_t shift = Utils::ShiftForPowerOfTwo(uimm + 1);
+      if (Supports(RV_Zbb) && (shift == 16)) {
+        zexth(rd, rs1);
+      } else {
+        slli(rd, rs1, XLEN - shift);
+        srli(rd, rd, XLEN - shift);
+      }
     } else {
       ASSERT(rs1 != TMP);
       LoadImmediate(TMP, imm);
@@ -93,8 +157,13 @@ class MacroAssembler : public Assembler {
   }
 
   void OrImmediate(Register rd, Register rs1, intptr_t imm) {
-    if (IsITypeImm(imm)) {
+    uintx_t uimm = imm;
+    if (imm == 0) {
+      Move(rd, rs1);
+    } else if (IsITypeImm(imm)) {
       ori(rd, rs1, imm);
+    } else if (Supports(RV_Zbs) && Utils::IsPowerOfTwo(uimm)) {
+      bseti(rd, rs1, Utils::ShiftForPowerOfTwo(uimm));
     } else {
       ASSERT(rs1 != TMP);
       LoadImmediate(TMP, imm);
@@ -103,8 +172,13 @@ class MacroAssembler : public Assembler {
   }
 
   void XorImmediate(Register rd, Register rs1, intptr_t imm) {
-    if (IsITypeImm(imm)) {
+    uintx_t uimm = imm;
+    if (imm == 0) {
+      Move(rd, rs1);
+    } else if (IsITypeImm(imm)) {
       xori(rd, rs1, imm);
+    } else if (Supports(RV_Zbs) && Utils::IsPowerOfTwo(uimm)) {
+      binvi(rd, rs1, Utils::ShiftForPowerOfTwo(uimm));
     } else {
       ASSERT(rs1 != TMP);
       LoadImmediate(TMP, imm);
@@ -112,14 +186,12 @@ class MacroAssembler : public Assembler {
     }
   }
 
-  void tbnz(Register rs1, intptr_t imm, Label* label) {
-    if (IsITypeImm(imm)) {
-      andi(TMP, rs1, imm);
-      bnez(TMP, label);
+  void tbnz(Register rs1, intptr_t bit, Label* label) {
+    if (bit == XLEN - 1) {
+      bltz(rs1, label);
     } else {
-      LoadImmediate(TMP, imm);
-      and_(TMP, TMP, rs1);
-      bnez(TMP, label);
+      slli(TMP, rs1, XLEN - 1 - bit);
+      bltz(TMP, label);
     }
   }
 
@@ -323,12 +395,6 @@ constexpr Register BYTE = T6;      // At call.
 
 class JITAssembler : public MacroAssembler {
  public:
-  void MoveRegister(Register rd, Register rs) {
-    if (rd != rs) {
-      mv(rd, rs);
-    }
-  }
-
   void EnterFrame(intptr_t size) {
     addi(SP, SP, 4 * kWordSize + size);
     sw(RA, Address(SP, 3 * kWordSize + size));
@@ -476,7 +542,7 @@ class JITAssembler : public MacroAssembler {
   }
 
   void Return(Register result) {
-    MoveRegister(A0, result);  // Likely no-op.
+    Move(A0, result);  // Likely no-op.
     lw(RA, Address(SP, 0));
     lw(PP, Address(SP, 0));
     lw(S0, Address(SP, 0));
@@ -488,7 +554,7 @@ class JITAssembler : public MacroAssembler {
   }
 
   void NonLocalReturn() {
-    // MoveRegister(A0, result);  // Likely no-op.
+    // Move(A0, result);  // Likely no-op.
     lw(T0, Address(THR, 0));
     jr(T0);  // Maybe not a tail so the NLR stub can look at metadata for this
              // method?
