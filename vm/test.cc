@@ -1724,12 +1724,12 @@ UNIT_TEST(ShiftLeftLogicalImmediate2) {
   char* disassembly = disassembler.Disassemble(buffer, size);
 #if XLEN == 32
   EXPECT_STREQ(
-      "  01f51513 slli a0, a0, 0x1f\n"  ///CHECK
+      "  01f51513 slli a0, a0, 0x1f\n"
       "  00008067 ret\n",
       disassembly);
 #elif XLEN == 64
   EXPECT_STREQ(
-      "  03f51513 slli a0, a0, 0x3f\n"   ///CHECK
+      "  03f51513 slli a0, a0, 0x3f\n"
       "  00008067 ret\n",
       disassembly);
 #endif
@@ -1781,12 +1781,12 @@ UNIT_TEST(ShiftRightLogicalImmediate2) {
   char* disassembly = disassembler.Disassemble(buffer, size);
 #if XLEN == 32
   EXPECT_STREQ(
-      "  01f55513 srli a0, a0, 0x1f\n"  //CHECK
+      "  01f55513 srli a0, a0, 0x1f\n"
       "  00008067 ret\n",
       disassembly);
 #elif XLEN == 64
   EXPECT_STREQ(
-      "  03f55513 srli a0, a0, 0x3f\n" //CHECK
+      "  03f55513 srli a0, a0, 0x3f\n"
       "  00008067 ret\n",
       disassembly);
 #endif
@@ -9354,6 +9354,442 @@ UNIT_TEST(ConditionalZeroIfNotEqualsZero) {
   EXPECT_EQ(0, simulator.Call(buffer, 42, -1));
 }
 
+UNIT_TEST(CompressedLoadByteUnsigned_0) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lbu(A0, Address(A0, 0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8108 lbu a0, 0(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint8_t* values =
+      reinterpret_cast<uint8_t*>(Memory::Allocate(3 * sizeof(uint8_t)));
+  values[0] = 0xAB;
+  values[1] = 0xCD;
+  values[2] = 0xEF;
+
+  Simulator simulator;
+  EXPECT_EQ(0xCD, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedLoadByteUnsigned_Pos) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lbu(A0, Address(A0, 1));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8148 lbu a0, 1(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint8_t* values =
+      reinterpret_cast<uint8_t*>(Memory::Allocate(3 * sizeof(uint8_t)));
+  values[0] = 0xAB;
+  values[1] = 0xCD;
+  values[2] = 0xEF;
+
+  Simulator simulator;
+  EXPECT_EQ(0xEF, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedLoadHalfword_0) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lh(A0, Address(A0, 0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8548 lh a0, 0(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0xAB01;
+  values[1] = 0xCD02;
+  values[2] = 0xEF03;
+
+  Simulator simulator;
+  EXPECT_EQ(-13054, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedLoadHalfword_Pos) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lh(A0, Address(A0, 2));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8568 lh a0, 2(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0xAB01;
+  values[1] = 0xCD02;
+  values[2] = 0xEF03;
+
+  Simulator simulator;
+  EXPECT_EQ(-4349, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedLoadHalfwordUnsigned_0) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lhu(A0, Address(A0, 0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8508 lhu a0, 0(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0xAB01;
+  values[1] = 0xCD02;
+  values[2] = 0xEF03;
+
+  Simulator simulator;
+  EXPECT_EQ(0xCD02, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedLoadHalfwordUnsigned_Pos) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ lhu(A0, Address(A0, 2));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8528 lhu a0, 2(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0xAB01;
+  values[1] = 0xCD02;
+  values[2] = 0xEF03;
+
+  Simulator simulator;
+  EXPECT_EQ(0xEF03, simulator.Call(buffer, Memory::ToGuest(&values[1])));
+}
+
+UNIT_TEST(CompressedStoreByte_0) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sb(A1, Address(A0, 0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      890c sb a1, 0(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint8_t* values =
+      reinterpret_cast<uint8_t*>(Memory::Allocate(3 * sizeof(uint8_t)));
+  values[0] = 0;
+  values[1] = 0;
+  values[2] = 0;
+
+  Simulator simulator;
+  simulator.Call(buffer, Memory::ToGuest(&values[1]), 0xCD);
+  EXPECT_EQ(0, values[0]);
+  EXPECT_EQ(0xCD, values[1]);
+  EXPECT_EQ(0, values[2]);
+}
+
+UNIT_TEST(CompressedStoreByte_Pos) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sb(A1, Address(A0, 1));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      894c sb a1, 1(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint8_t* values =
+      reinterpret_cast<uint8_t*>(Memory::Allocate(3 * sizeof(uint8_t)));
+  values[0] = 0;
+  values[1] = 0;
+  values[2] = 0;
+
+  Simulator simulator;
+  simulator.Call(buffer, Memory::ToGuest(&values[1]), 0xEF);
+  EXPECT_EQ(0, values[0]);
+  EXPECT_EQ(0, values[1]);
+  EXPECT_EQ(0xEF, values[2]);
+}
+
+UNIT_TEST(CompressedStoreHalfword_0) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sh(A1, Address(A0, 0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8d0c sh a1, 0(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0;
+  values[1] = 0;
+  values[2] = 0;
+
+  Simulator simulator;
+  simulator.Call(buffer, Memory::ToGuest(&values[1]), 0xCD02);
+  EXPECT_EQ(0, values[0]);
+  EXPECT_EQ(0xCD02, values[1]);
+  EXPECT_EQ(0, values[2]);
+}
+
+UNIT_TEST(CompressedStoreHalfword_Pos) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sh(A1, Address(A0, 2));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      8d2c sh a1, 2(a0)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  uint16_t* values =
+      reinterpret_cast<uint16_t*>(Memory::Allocate(3 * sizeof(uint16_t)));
+  values[0] = 0;
+  values[1] = 0;
+  values[2] = 0;
+
+  Simulator simulator;
+  simulator.Call(buffer, Memory::ToGuest(&values[1]), 0xEF03);
+  EXPECT_EQ(0, values[0]);
+  EXPECT_EQ(0, values[1]);
+  EXPECT_EQ(0xEF03, values[2]);
+}
+
+UNIT_TEST(CompressedSignExtendByte) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sextb(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d65 sext.b a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(127, simulator.Call(buffer, 127));
+  EXPECT_EQ(-128, simulator.Call(buffer, 128));
+}
+
+UNIT_TEST(CompressedZeroExtendByte) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ zextb(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d61 zext.b a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(1, simulator.Call(buffer, 1));
+  EXPECT_EQ(0xCD, simulator.Call(buffer, 0x1234ABCD));
+  EXPECT_EQ(0xFF, simulator.Call(buffer, 0xFF));
+  EXPECT_EQ(0xFF, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(CompressedSignExtendHalfword) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ sexth(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d6d sext.h a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0x7BCD, simulator.Call(buffer, 0x12347BCD));
+  EXPECT_EQ(-1, simulator.Call(buffer, 0xFFFF));
+  EXPECT_EQ(-1, simulator.Call(buffer, -1));
+}
+
+UNIT_TEST(CompressedZeroExtendHalfword) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ zexth(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d69 zext.h a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0xABCD, simulator.Call(buffer, 0x1234ABCD));
+  EXPECT_EQ(0xFFFF, simulator.Call(buffer, 0xFFFF));
+  EXPECT_EQ(0xFFFF, simulator.Call(buffer, -1));
+}
+
+#if XLEN >= 64
+UNIT_TEST(CompressedZeroExtendWord) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ zextw(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d71 zext.w a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+  EXPECT_EQ(0x1234ABCD, simulator.Call(buffer, 0x11234ABCD));
+  EXPECT_EQ(0xFFFFFFFF, simulator.Call(buffer, 0xFFFFFFFF));
+  EXPECT_EQ(0xFFFFFFFF, simulator.Call(buffer, -1));
+}
+#endif  // XLEN >= 64
+
+UNIT_TEST(CompressedNot) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ not_(A0, A0);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d75 not a0, a0\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(~42, simulator.Call(buffer, 42));
+  EXPECT_EQ(~-42, simulator.Call(buffer, -42));
+}
+
+UNIT_TEST(CompressedMultiply) {
+  Assembler assembler(RV_GCB | RV_Zcb);
+  __ mul(A0, A0, A1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GCB | RV_Zcb);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "      9d4d mul a0, a0, a1\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  Simulator simulator;
+  EXPECT_EQ(68, simulator.Call(buffer, 4, 17));
+  EXPECT_EQ(-68, simulator.Call(buffer, -4, 17));
+  EXPECT_EQ(-68, simulator.Call(buffer, 4, -17));
+  EXPECT_EQ(68, simulator.Call(buffer, -4, -17));
+  EXPECT_EQ(68, simulator.Call(buffer, 17, 4));
+  EXPECT_EQ(-68, simulator.Call(buffer, -17, 4));
+  EXPECT_EQ(-68, simulator.Call(buffer, 17, -4));
+  EXPECT_EQ(68, simulator.Call(buffer, -17, -4));
+}
+
 UNIT_TEST(MacroLoadImmediate_LoadImmediates) {
   for (intptr_t base = -8; base < 7; base++) {
     for (intptr_t shift = 0; shift < XLEN; shift++) {
@@ -9615,6 +10051,8 @@ TEST_ENCODING(intptr_t, CSPLoad4Imm)
 TEST_ENCODING(intptr_t, CSPLoad8Imm)
 TEST_ENCODING(intptr_t, CSPStore4Imm)
 TEST_ENCODING(intptr_t, CSPStore8Imm)
+TEST_ENCODING(intptr_t, CMem1Imm)
+TEST_ENCODING(intptr_t, CMem2Imm)
 TEST_ENCODING(intptr_t, CMem4Imm)
 TEST_ENCODING(intptr_t, CMem8Imm)
 TEST_ENCODING(intptr_t, CJImm)

@@ -145,6 +145,10 @@ class MacroAssembler : public Assembler {
       intptr_t shift = Utils::ShiftForPowerOfTwo(uimm + 1);
       if (Supports(RV_Zbb) && (shift == 16)) {
         zexth(rd, rs1);
+#if XLEN >= 64
+      } else if (Supports(RV_Zba) && (shift == 32)) {
+        zextw(rd, rs1);
+#endif
       } else {
         slli(rd, rs1, XLEN - shift);
         srli(rd, rd, XLEN - shift);
