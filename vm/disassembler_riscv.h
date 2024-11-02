@@ -79,6 +79,8 @@ class Disassembler {
   void DisassembleMISCMEM(Instruction instr);
   void DisassembleSYSTEM(Instruction instr);
   void DisassembleAMO(Instruction instr);
+  void DisassembleAMO8(Instruction instr);
+  void DisassembleAMO16(Instruction instr);
   void DisassembleAMO32(Instruction instr);
   void DisassembleAMO64(Instruction instr);
   void DisassembleLOADFP(Instruction instr);

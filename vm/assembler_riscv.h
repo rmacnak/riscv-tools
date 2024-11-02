@@ -596,6 +596,29 @@ class Assembler {
   // rd := rs2 != 0 ? 0 : rs1
   void czeronez(Register rd, Register rs1, Register rs2);
 
+  // ==== Zalasr: Load-acquire, store-release ====
+  void lb(Register rd, Address addr, std::memory_order order);
+  void lh(Register rd, Address addr, std::memory_order order);
+  void lw(Register rd, Address addr, std::memory_order order);
+  void sb(Register rs2, Address addr, std::memory_order order);
+  void sh(Register rs2, Address addr, std::memory_order order);
+  void sw(Register rs2, Address addr, std::memory_order order);
+#if XLEN >= 64
+  void ld(Register rd, Address addr, std::memory_order order);
+  void sd(Register rs2, Address addr, std::memory_order order);
+#endif
+
+#if XLEN == 32
+  void lx(Register rd, Address addr, std::memory_order o) { lw(rd, addr, o); }
+  void sx(Register rs2, Address addr, std::memory_order o) { sw(rs2, addr, o); }
+#elif XLEN == 64
+  void lx(Register rd, Address addr, std::memory_order o) { ld(rd, addr, o); }
+  void sx(Register rs2, Address addr, std::memory_order o) { sd(rs2, addr, o); }
+#elif XLEN == 128
+  void lx(Register rd, Address addr, std::memory_order o) { lq(rd, addr, o); }
+  void sx(Register rs2, Address addr, std::memory_order o) { sq(rs2, adrr, o); }
+#endif
+
  private:
   // ==== RV32/64C ====
   void c_lwsp(Register rd, Address addr);

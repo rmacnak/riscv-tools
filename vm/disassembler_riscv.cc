@@ -1122,11 +1122,43 @@ void Disassembler::DisassembleSYSTEM(Instruction instr) {
 
 void Disassembler::DisassembleAMO(Instruction instr) {
   switch (instr.funct3()) {
+    case WIDTH8:
+      DisassembleAMO8(instr);
+      break;
+    case WIDTH16:
+      DisassembleAMO16(instr);
+      break;
     case WIDTH32:
       DisassembleAMO32(instr);
       break;
     case WIDTH64:
       DisassembleAMO64(instr);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleAMO8(Instruction instr) {
+  switch (instr.funct5()) {
+    case LOADORDERED:
+      Print("lb'order 'rd, ('rs1)", instr, RV_Zalasr);
+      break;
+    case STOREORDERED:
+      Print("sb'order 'rs2, ('rs1)", instr, RV_Zalasr);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleAMO16(Instruction instr) {
+  switch (instr.funct5()) {
+    case LOADORDERED:
+      Print("lh'order 'rd, ('rs1)", instr, RV_Zalasr);
+      break;
+    case STOREORDERED:
+      Print("sh'order 'rs2, ('rs1)", instr, RV_Zalasr);
       break;
     default:
       UnknownInstruction(instr);
@@ -1168,6 +1200,12 @@ void Disassembler::DisassembleAMO32(Instruction instr) {
     case AMOMAXU:
       Print("amomaxu.w'order 'rd, 'rs2, ('rs1)", instr, RV_A);
       break;
+    case LOADORDERED:
+      Print("lw'order 'rd, ('rs1)", instr, RV_Zalasr);
+      break;
+    case STOREORDERED:
+      Print("sw'order 'rs2, ('rs1)", instr, RV_Zalasr);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1208,6 +1246,12 @@ void Disassembler::DisassembleAMO64(Instruction instr) {
       break;
     case AMOMAXU:
       Print("amomaxu.d'order 'rd, 'rs2, ('rs1)", instr, RV_A);
+      break;
+    case LOADORDERED:
+      Print("ld'order 'rd, ('rs1)", instr, RV_Zalasr);
+      break;
+    case STOREORDERED:
+      Print("sd'order 'rs2, ('rs1)", instr, RV_Zalasr);
       break;
 #endif
     default:

@@ -1616,6 +1616,72 @@ void Assembler::czeronez(Register rd, Register rs1, Register rs2) {
   EmitRType(CZERO, rs2, rs1, CZERONEZ, rd, OP);
 }
 
+void Assembler::lb(Register rd, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_acquire) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(LOADORDERED, order, ZERO, addr.base(), WIDTH8, rd, AMO);
+}
+
+void Assembler::lh(Register rd, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_acquire) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(LOADORDERED, order, ZERO, addr.base(), WIDTH16, rd, AMO);
+}
+
+void Assembler::lw(Register rd, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_acquire) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(LOADORDERED, order, ZERO, addr.base(), WIDTH32, rd, AMO);
+}
+
+void Assembler::sb(Register rs2, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_release) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(STOREORDERED, order, rs2, addr.base(), WIDTH8, ZERO, AMO);
+}
+
+void Assembler::sh(Register rs2, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_release) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(STOREORDERED, order, rs2, addr.base(), WIDTH16, ZERO, AMO);
+}
+
+void Assembler::sw(Register rs2, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_release) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(STOREORDERED, order, rs2, addr.base(), WIDTH32, ZERO, AMO);
+}
+
+#if XLEN >= 64
+void Assembler::ld(Register rd, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_acquire) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(LOADORDERED, order, ZERO, addr.base(), WIDTH64, rd, AMO);
+}
+
+void Assembler::sd(Register rs2, Address addr, std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT((order == std::memory_order_release) ||
+         (order == std::memory_order_acq_rel));
+  ASSERT(Supports(RV_Zalasr));
+  EmitRType(STOREORDERED, order, rs2, addr.base(), WIDTH64, ZERO, AMO);
+}
+#endif  // XLEN >= 64
+
 void Assembler::c_lwsp(Register rd, Address addr) {
   ASSERT(rd != ZERO);
   ASSERT(addr.base() == SP);

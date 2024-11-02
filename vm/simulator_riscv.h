@@ -242,6 +242,8 @@ class Simulator {
   void InterpretSYSTEM(Instruction instr);
   void InterpretECALL(Instruction instr);
   void InterpretAMO(Instruction instr);
+  void InterpretAMO8(Instruction instr);
+  void InterpretAMO16(Instruction instr);
   void InterpretAMO32(Instruction instr);
   void InterpretAMO64(Instruction instr);
   template <typename type>
@@ -266,6 +268,10 @@ class Simulator {
   void InterpretAMOMINU(Instruction instr);
   template <typename type>
   void InterpretAMOMAXU(Instruction instr);
+  template <typename type>
+  void InterpretLOADORDERED(Instruction instr);
+  template <typename type>
+  void InterpretSTOREORDERED(Instruction instr);
   void InterpretLOADFP(Instruction instr);
   void InterpretSTOREFP(Instruction instr);
   void InterpretFMADD(Instruction instr);

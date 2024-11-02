@@ -9790,6 +9790,204 @@ UNIT_TEST(CompressedMultiply) {
   EXPECT_EQ(68, simulator.Call(buffer, -17, -4));
 }
 
+UNIT_TEST(LoadByteAcquire) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ lb(A0, Address(A1), std::memory_order_acquire);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3405852f lb.aq a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* values =
+    reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  values[0] = -42;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, 0, Memory::ToGuest(&values[0])));
+}
+
+UNIT_TEST(LoadHalfwordAcquire) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ lh(A0, Address(A1), std::memory_order_acquire);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3405952f lh.aq a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* values =
+    reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  values[0] = -42;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, 0, Memory::ToGuest(&values[0])));
+}
+
+UNIT_TEST(LoadWordAcquire) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ lw(A0, Address(A1), std::memory_order_acquire);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3405a52f lw.aq a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int32_t* values =
+    reinterpret_cast<int32_t*>(Memory::Allocate(sizeof(int32_t)));
+  values[0] = -42;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, 0, Memory::ToGuest(&values[0])));
+}
+
+UNIT_TEST(StoreByteRelease) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ sb(A0, Address(A1), std::memory_order_release);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3aa5802f sb.rl a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* values =
+    reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  values[0] = 0;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, -42, Memory::ToGuest(&values[0])));
+  EXPECT_EQ(-42, values[0]);
+}
+
+UNIT_TEST(StoreHalfwordRelease) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ sh(A0, Address(A1), std::memory_order_release);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3aa5902f sh.rl a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* values =
+    reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  values[0] = 0;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, -42, Memory::ToGuest(&values[0])));
+  EXPECT_EQ(-42, values[0]);
+}
+
+UNIT_TEST(StoreWordRelease) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ sw(A0, Address(A1), std::memory_order_release);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3aa5a02f sw.rl a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int32_t* values =
+    reinterpret_cast<int32_t*>(Memory::Allocate(sizeof(int32_t)));
+  values[0] = 0;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, -42, Memory::ToGuest(&values[0])));
+  EXPECT_EQ(-42, values[0]);
+}
+
+#if XLEN >= 64
+UNIT_TEST(LoadDoubleWordAcquire) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ ld(A0, Address(A1), std::memory_order_acquire);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3405b52f ld.aq a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int64_t* values =
+    reinterpret_cast<int64_t*>(Memory::Allocate(sizeof(int64_t)));
+  values[0] = -42;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, 0, Memory::ToGuest(&values[0])));
+}
+
+UNIT_TEST(StoreDoubleWordRelease) {
+  Assembler assembler(RV_GC | RV_Zalasr);
+  __ sd(A0, Address(A1), std::memory_order_release);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC | RV_Zalasr);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  3aa5b02f sd.rl a0, (a1)\n"
+      "      8082 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int64_t* values =
+    reinterpret_cast<int64_t*>(Memory::Allocate(sizeof(int64_t)));
+  values[0] = 0;
+
+  Simulator simulator;
+  EXPECT_EQ(-42, simulator.Call(buffer, -42, Memory::ToGuest(&values[0])));
+  EXPECT_EQ(-42, values[0]);
+}
+#endif  // XLEN >= 64
+
 UNIT_TEST(MacroLoadImmediate_LoadImmediates) {
   for (intptr_t base = -8; base < 7; base++) {
     for (intptr_t shift = 0; shift < XLEN; shift++) {
