@@ -305,6 +305,7 @@ enum Funct3 {
   FENCE = 0b000,
   FENCEI = 0b001,
 
+  PRIV = 0b000,
   CSRRW = 0b001,
   CSRRS = 0b010,
   CSRRC = 0b011,

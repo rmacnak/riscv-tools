@@ -1059,7 +1059,7 @@ void Disassembler::DisassembleMISCMEM(Instruction instr) {
 
 void Disassembler::DisassembleSYSTEM(Instruction instr) {
   switch (instr.funct3()) {
-    case 0:
+    case PRIV:
       switch (instr.funct12()) {
         case ECALL:
           Print("ecall", instr, RV_I);

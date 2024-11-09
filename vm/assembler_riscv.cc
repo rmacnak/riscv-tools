@@ -515,7 +515,7 @@ void Assembler::fencei() {
 
 void Assembler::ecall() {
   ASSERT(Supports(RV_I));
-  EmitIType(ECALL, ZERO, F3_0, ZERO, SYSTEM);
+  EmitIType(ECALL, ZERO, PRIV, ZERO, SYSTEM);
 }
 void Assembler::ebreak() {
   ASSERT(Supports(RV_I));
@@ -523,7 +523,7 @@ void Assembler::ebreak() {
     c_ebreak();
     return;
   }
-  EmitIType(EBREAK, ZERO, F3_0, ZERO, SYSTEM);
+  EmitIType(EBREAK, ZERO, PRIV, ZERO, SYSTEM);
 }
 
 void Assembler::csrrw(Register rd, uint32_t csr, Register rs1) {

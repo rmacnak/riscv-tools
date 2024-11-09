@@ -1575,7 +1575,7 @@ void Simulator::InterpretMISCMEM(Instruction instr) {
 
 void Simulator::InterpretSYSTEM(Instruction instr) {
   switch (instr.funct3()) {
-    case 0:
+    case PRIV:
       switch (instr.funct12()) {
         case ECALL:
           InterpretECALL(instr);
