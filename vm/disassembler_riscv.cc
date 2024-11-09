@@ -1141,6 +1141,33 @@ void Disassembler::DisassembleAMO(Instruction instr) {
 
 void Disassembler::DisassembleAMO8(Instruction instr) {
   switch (instr.funct5()) {
+    case AMOSWAP:
+      Print("amoswap.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOADD:
+      Print("amoadd.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOXOR:
+      Print("amoxor.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOAND:
+      Print("amoand.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOOR:
+      Print("amoor.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMIN:
+      Print("amomin.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMAX:
+      Print("amomax.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMINU:
+      Print("amominu.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMAXU:
+      Print("amomaxu.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
     case LOADORDERED:
       Print("lb'order 'rd, ('rs1)", instr, RV_Zalasr);
       break;
@@ -1154,6 +1181,33 @@ void Disassembler::DisassembleAMO8(Instruction instr) {
 
 void Disassembler::DisassembleAMO16(Instruction instr) {
   switch (instr.funct5()) {
+    case AMOSWAP:
+      Print("amoswap.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOADD:
+      Print("amoadd.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOXOR:
+      Print("amoxor.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOAND:
+      Print("amoand.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOOR:
+      Print("amoor.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMIN:
+      Print("amomin.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMAX:
+      Print("amomax.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMINU:
+      Print("amominu.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
+    case AMOMAXU:
+      Print("amomaxu.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zabha);
+      break;
     case LOADORDERED:
       Print("lh'order 'rd, ('rs1)", instr, RV_Zalasr);
       break;

@@ -1115,7 +1115,8 @@ static constexpr ExtensionSet RV_GCB = RV_GC | RV_B;
 static constexpr Extension RV_Zbc(9);  // Carry-less multiplication
 static constexpr Extension RV_Zicond(10);  // Integer conditional operations
 static constexpr Extension RV_Zcb(11);  // More compressed instructions
-static constexpr Extension RV_Zalasr(12);  // Load-acquire, store-release
+static constexpr Extension RV_Zabha(12);  // Byte and halfword AMOs
+static constexpr Extension RV_Zalasr(13);  // Load-acquire store-release
 
 }  // namespace psoup
 

@@ -9790,6 +9790,500 @@ UNIT_TEST(CompressedMultiply) {
   EXPECT_EQ(68, simulator.Call(buffer, -17, -4));
 }
 
+UNIT_TEST(AmoSwapByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoswapb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  08b5052f amoswap.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1010, *value);
+}
+
+UNIT_TEST(AmoAddByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoaddb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  00b5052f amoadd.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = 42;
+
+  Simulator simulator;
+  EXPECT_EQ(42, simulator.Call(buffer, Memory::ToGuest(value), 10));
+  EXPECT_EQ(52, *value);
+}
+
+UNIT_TEST(AmoXorByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoxorb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b5052f amoxor.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b0110, *value);
+}
+
+UNIT_TEST(AmoAndByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoandb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b5052f amoand.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1000, *value);
+}
+
+UNIT_TEST(AmoOrByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoorb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  40b5052f amoor.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1110, *value);
+}
+
+UNIT_TEST(AmoMinByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amominb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  80b5052f amomin.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-11, *value);
+}
+
+UNIT_TEST(AmoMaxByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amomaxb(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  a0b5052f amomax.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-4, *value);
+}
+
+UNIT_TEST(AmoMinUnsignedByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amominub(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  c0b5052f amominu.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-11, *value);
+}
+
+UNIT_TEST(AmoMaxUnsignedByte) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amomaxub(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  e0b5052f amomaxu.b a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int8_t* value =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-4, *value);
+}
+
+UNIT_TEST(AmoSwapHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoswaph(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  08b5152f amoswap.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1010, *value);
+}
+
+UNIT_TEST(AmoAddHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoaddh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  00b5152f amoadd.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = 42;
+
+  Simulator simulator;
+  EXPECT_EQ(42, simulator.Call(buffer, Memory::ToGuest(value), 10));
+  EXPECT_EQ(52, *value);
+}
+
+UNIT_TEST(AmoXorHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoxorh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  20b5152f amoxor.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b0110, *value);
+}
+
+UNIT_TEST(AmoAndHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoandh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  60b5152f amoand.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1000, *value);
+}
+
+UNIT_TEST(AmoOrHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amoorh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  40b5152f amoor.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = 0b1100;
+
+  Simulator simulator;
+  EXPECT_EQ(0b1100, simulator.Call(buffer, Memory::ToGuest(value), 0b1010));
+  EXPECT_EQ(0b1110, *value);
+}
+
+UNIT_TEST(AmoMinHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amominh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  80b5152f amomin.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-11, *value);
+}
+
+UNIT_TEST(AmoMaxHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amomaxh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  a0b5152f amomax.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(-7, simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-4, *value);
+}
+
+UNIT_TEST(AmoMinUnsignedHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amominuh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  c0b5152f amominu.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-11, *value);
+}
+
+UNIT_TEST(AmoMaxUnsignedHalfWord) {
+  Assembler assembler(RV_G | RV_Zabha);
+  __ amomaxuh(A0, A1, Address(A0));
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G | RV_Zabha);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ(
+      "  e0b5152f amomaxu.h a0, a1, (a0)\n"
+      "  00008067 ret\n",
+      disassembly);
+  free(disassembly);
+
+  int16_t* value =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *value = -7;
+
+  Simulator simulator;
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -11));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -7));
+  EXPECT_EQ(-7, *value);
+  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+            simulator.Call(buffer, Memory::ToGuest(value), -4));
+  EXPECT_EQ(-4, *value);
+}
+
 UNIT_TEST(LoadByteAcquire) {
   Assembler assembler(RV_GC | RV_Zalasr);
   __ lb(A0, Address(A1), std::memory_order_acquire);
