@@ -65,6 +65,7 @@ class Assembler {
   explicit Assembler(ExtensionSet extensions = RV_G);
   ~Assembler();
 
+  ExtensionSet extensions() const { return extensions_; }
   bool Supports(Extension extension) const {
     return extensions_.Includes(extension);
   }
