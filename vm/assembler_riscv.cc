@@ -22,87 +22,94 @@ Assembler::~Assembler() {
 
 void Assembler::Bind(Label* label) {
   ASSERT(!label->IsBound());
-  intptr_t target_position = size();
-
-  while (label->IsLinked()) {
-    int32_t branch_position = label->Position();
-    ASSERT(Utils::IsAligned(branch_position, 2));
-    int32_t offset = target_position - branch_position;
-    ASSERT(Utils::IsAligned(offset, 2));
-
-    if (IsCInstruction(Read16(branch_position))) {
-      uint16_t old_branch = Read16(branch_position);
-      uint16_t new_branch = EncodeCBranchOrJumpOffset(offset, old_branch);
-      Write16(branch_position, new_branch);
-      label->position_ = DecodeCBranchOrJumpOffset(old_branch);
-    } else {
-      uint32_t old_branch = Read32(branch_position);
-      uint32_t new_branch = EncodeBranchOrJumpOffset(offset, old_branch);
-      Write32(branch_position, new_branch);
-      label->position_ = DecodeBranchOrJumpOffset(old_branch);
-    }
+  intptr_t target_position = Position();
+  intptr_t branch_position = label->pending_b_;
+  while (branch_position >= 0) {
+    intptr_t new_offset = target_position - branch_position;
+    intptr_t old_offset = UpdateBOffset(branch_position, new_offset);
+    if (old_offset == 0) break;
+    branch_position -= old_offset;
   }
-
-  label->BindTo(target_position);
+  branch_position = label->pending_j_;
+  while (branch_position >= 0) {
+    intptr_t new_offset = target_position - branch_position;
+    intptr_t old_offset = UpdateJOffset(branch_position, new_offset);
+    if (old_offset == 0) break;
+    branch_position -= old_offset;
+  }
+  branch_position = label->pending_cb_;
+  while (branch_position >= 0) {
+    intptr_t new_offset = target_position - branch_position;
+    intptr_t old_offset = UpdateCBOffset(branch_position, new_offset);
+    if (old_offset == 0) break;
+    branch_position -= old_offset;
+  }
+  branch_position = label->pending_cj_;
+  while (branch_position >= 0) {
+    intptr_t new_offset = target_position - branch_position;
+    intptr_t old_offset = UpdateCJOffset(branch_position, new_offset);
+    if (old_offset == 0) break;
+    branch_position -= old_offset;
+  }
+  label->position_ = target_position;
+  label->pending_b_ = -1;
+  label->pending_j_ = -1;
+  label->pending_cb_ = -1;
+  label->pending_cj_ = -1;
+  ASSERT(label->IsBound());
+  ASSERT(!label->IsLinked());
 }
 
-uint32_t Assembler::EncodeBranchOrJumpOffset(int32_t offset, uint32_t encoded) {
-  ASSERT(offset != 0);
-  Instruction instr(encoded);
-  if (instr.opcode() == BRANCH) {
-    uint32_t e = 0;
-    e |= EncodeRs2(instr.rs2());
-    e |= EncodeRs1(instr.rs1());
-    e |= EncodeFunct3(instr.funct3());
-    e |= EncodeOpcode(instr.opcode());
-    e |= EncodeBTypeImm(offset);
-    return e;
-  } else if (instr.opcode() == JAL) {
-    uint32_t e = 0;
-    e |= EncodeRd(instr.rd());
-    e |= EncodeOpcode(instr.opcode());
-    e |= EncodeJTypeImm(offset);
-    return e;
-  } else {
-    UNREACHABLE();
-    return 0;
+intptr_t Assembler::UpdateBOffset(intptr_t branch_position,
+                                  intptr_t new_offset) {
+  Instruction instr(Read32(branch_position));
+  ASSERT(instr.opcode() == BRANCH);
+  intptr_t old_offset = instr.btype_imm();
+  if (!IsBTypeImm(new_offset)) {
+    FATAL("range");
   }
+  Write32(branch_position, (instr.encoding() & ~EncodeBTypeImm(-2)) |
+                               EncodeBTypeImm(new_offset));
+  return old_offset;
 }
 
-int32_t Assembler::DecodeBranchOrJumpOffset(uint32_t encoded) {
-  Instruction instr(encoded);
-  if (instr.opcode() == BRANCH) {
-    return instr.btype_imm();
-  } else if (instr.opcode() == JAL) {
-    return instr.jtype_imm();
-  } else {
-    UNREACHABLE();
-    return 0;
+intptr_t Assembler::UpdateJOffset(intptr_t branch_position,
+                                  intptr_t new_offset) {
+  Instruction instr(Read32(branch_position));
+  ASSERT(instr.opcode() == JAL);
+  intptr_t old_offset = instr.jtype_imm();
+  if (!IsJTypeImm(new_offset)) {
+    FATAL("range");
   }
+  Write32(branch_position, (instr.encoding() & ~EncodeJTypeImm(-2)) |
+                               EncodeJTypeImm(new_offset));
+  return old_offset;
 }
 
-uint32_t Assembler::EncodeCBranchOrJumpOffset(int32_t offset,
-                                              uint32_t encoded) {
-  ASSERT(offset != 0);
-  CInstruction instr(encoded);
-  if ((instr.opcode() == C_BEQZ) || (instr.opcode() == C_BNEZ)) {
-    return instr.opcode() | EncodeCRs1p(instr.rs1p()) | EncodeCBImm(offset);
-  } else if ((instr.opcode() == C_J) || (instr.opcode() == C_JAL)) {
-    return instr.opcode() | EncodeCJImm(offset);
+intptr_t Assembler::UpdateCBOffset(intptr_t branch_position,
+                                   intptr_t new_offset) {
+  CInstruction instr(Read16(branch_position));
+  ASSERT((instr.opcode() == C_BEQZ) || (instr.opcode() == C_BNEZ));
+  intptr_t old_offset = instr.b_imm();
+  if (!IsCBImm(new_offset)) {
+    FATAL("Incorrect Assembler::kNearJump");
   }
-  UNREACHABLE();
-  return 0;
+  Write16(branch_position,
+          (instr.encoding() & ~EncodeCBImm(-2)) | EncodeCBImm(new_offset));
+  return old_offset;
 }
 
-int32_t Assembler::DecodeCBranchOrJumpOffset(uint32_t encoded) {
-  CInstruction instr(encoded);
-  if ((instr.opcode() == C_BEQZ) || (instr.opcode() == C_BNEZ)) {
-    return instr.b_imm();
-  } else if ((instr.opcode() == C_J) || (instr.opcode() == C_JAL)) {
-    return instr.j_imm();
+intptr_t Assembler::UpdateCJOffset(intptr_t branch_position,
+                                   intptr_t new_offset) {
+  CInstruction instr(Read16(branch_position));
+  ASSERT((instr.opcode() == C_J) || (instr.opcode() == C_JAL));
+  intptr_t old_offset = instr.j_imm();
+  if (!IsCJImm(new_offset)) {
+    FATAL("Incorrect Assembler::kNearJump");
   }
-  UNREACHABLE();
-  return 0;
+  Write16(branch_position,
+          (instr.encoding() & ~EncodeCJImm(-2)) | EncodeCJImm(new_offset));
+  return old_offset;
 }
 
 void Assembler::lui(Register rd, intptr_t imm) {
@@ -121,7 +128,8 @@ void Assembler::auipc(Register rd, intptr_t imm) {
 
 void Assembler::jal(Register rd, Label* label, bool near) {
   ASSERT(Supports(RV_I));
-  if (Supports(RV_C) && near) {
+  if (Supports(RV_C) &&
+      (near || (label->IsBound() && IsCJImm(label->Position() - Position())))) {
     if (rd == ZERO) {
       c_j(label);
       return;
@@ -154,7 +162,8 @@ void Assembler::jalr(Register rd, Register rs1, intptr_t offset) {
 
 void Assembler::beq(Register rs1, Register rs2, Label* label, bool near) {
   ASSERT(Supports(RV_I));
-  if (Supports(RV_C) && near) {
+  if (Supports(RV_C) &&
+      (near || (label->IsBound() && IsCBImm(label->Position() - Position())))) {
     if (rs1 == ZERO) {
       c_beqz(rs2, label);
       return;
@@ -2033,8 +2042,13 @@ void Assembler::EmitBranch(Register rs1,
   if (label->IsBound()) {
     offset = label->Position() - Position();
   } else {
-    offset = label->position_;
-    label->LinkTo(Position());
+    if (label->pending_b_ == -1) {
+      offset = 0;
+    } else {
+      offset = Position() - label->pending_b_;
+      ASSERT(offset > 0);
+    }
+    label->pending_b_ = Position();
   }
   EmitBType(offset, rs2, rs1, func, BRANCH);
 }
@@ -2044,8 +2058,13 @@ void Assembler::EmitJump(Register rd, Label* label, Opcode op) {
   if (label->IsBound()) {
     offset = label->Position() - Position();
   } else {
-    offset = label->position_;
-    label->LinkTo(Position());
+    if (label->pending_j_ == -1) {
+      offset = 0;
+    } else {
+      offset = Position() - label->pending_j_;
+      ASSERT(offset > 0);
+    }
+    label->pending_j_ = Position();
   }
   EmitJType(offset, rd, JAL);
 }
@@ -2055,8 +2074,13 @@ void Assembler::EmitCBranch(Register rs1p, Label* label, COpcode op) {
   if (label->IsBound()) {
     offset = label->Position() - Position();
   } else {
-    offset = label->position_;
-    label->LinkTo(Position());
+    if (label->pending_cb_ == -1) {
+      offset = 0;
+    } else {
+      offset = Position() - label->pending_cb_;
+      ASSERT(offset > 0);
+    }
+    label->pending_cb_ = Position();
   }
   Emit16(op | EncodeCRs1p(rs1p) | EncodeCBImm(offset));
 }
@@ -2066,8 +2090,13 @@ void Assembler::EmitCJump(Label* label, COpcode op) {
   if (label->IsBound()) {
     offset = label->Position() - Position();
   } else {
-    offset = label->position_;
-    label->LinkTo(Position());
+    if (label->pending_cj_ == -1) {
+      offset = 0;
+    } else {
+      offset = Position() - label->pending_cj_;
+      ASSERT(offset > 0);
+    }
+    label->pending_cj_ = Position();
   }
   Emit16(op | EncodeCJImm(offset));
 }

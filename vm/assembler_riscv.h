@@ -27,40 +27,30 @@ class Address {
 
 class Label {
  public:
-  Label() : position_(0) {}
+  Label() {}
 
   ~Label() {
     // Should not be destroyed with unresolved branches pending.
     ASSERT(!IsLinked());
   }
 
-  // Returns the position for bound and linked labels. Cannot be used
-  // for unused labels.
-  intptr_t Position() const {
-    ASSERT(!IsUnused());
-    return IsBound() ? -position_ - kWordSize : position_ - kWordSize;
+  int32_t Position() const {
+    ASSERT(IsBound());
+    return position_;
   }
 
-  bool IsBound() const { return position_ < 0; }
-  bool IsUnused() const { return position_ == 0; }
-  bool IsLinked() const { return position_ > 0; }
+  bool IsBound() const { return position_ >= 0; }
+  bool IsLinked() const {
+    return pending_b_ >= 0 || pending_j_ >= 0 || pending_cb_ >= 0 ||
+           pending_cj_ >= 0;
+  }
 
  private:
-  intptr_t position_;
-
-  void Reinitialize() { position_ = 0; }
-
-  void BindTo(intptr_t position) {
-    ASSERT(!IsBound());
-    position_ = -position - kWordSize;
-    ASSERT(IsBound());
-  }
-
-  void LinkTo(intptr_t position) {
-    ASSERT(!IsBound());
-    position_ = position + kWordSize;
-    ASSERT(IsLinked());
-  }
+  int32_t position_ = -1;
+  int32_t pending_b_ = -1;
+  int32_t pending_j_ = -1;
+  int32_t pending_cb_ = -1;
+  int32_t pending_cj_ = -1;
 
   friend class Assembler;
   DISALLOW_COPY_AND_ASSIGN(Label);
@@ -703,10 +693,10 @@ class Assembler {
   void c_mul(Register rd, Register rs1, Register rs2);
   void c_not(Register rd, Register rs1);
 
-  uint32_t EncodeBranchOrJumpOffset(int32_t offset, uint32_t encoded);
-  int32_t DecodeBranchOrJumpOffset(uint32_t encoded);
-  uint32_t EncodeCBranchOrJumpOffset(int32_t offset, uint32_t encoded);
-  int32_t DecodeCBranchOrJumpOffset(uint32_t encoded);
+  intptr_t UpdateBOffset(intptr_t branch_position, intptr_t new_offset);
+  intptr_t UpdateJOffset(intptr_t branch_position, intptr_t new_offset);
+  intptr_t UpdateCBOffset(intptr_t branch_position, intptr_t new_offset);
+  intptr_t UpdateCJOffset(intptr_t branch_position, intptr_t new_offset);
 
   intptr_t Position() { return size_; }
   void EmitBranch(Register rs1, Register rs2, Label* label, Funct3 func);

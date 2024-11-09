@@ -9988,6 +9988,102 @@ UNIT_TEST(StoreDoubleWordRelease) {
 }
 #endif  // XLEN >= 64
 
+UNIT_TEST(PendingB) {
+  Assembler assembler(RV_G);
+  Label label;
+  __ beqz(A0, &label);
+  __ beqz(A0, &label);
+  __ beqz(A0, &label);
+  __ Bind(&label);
+  __ beqz(A0, &label);
+  __ beqz(A0, &label);
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ("  00050663 beqz a0, +12\n"
+               "  00050463 beqz a0, +8\n"
+               "  00050263 beqz a0, +4\n"
+               "  00050063 beqz a0, +0\n"
+               "  fe050ee3 beqz a0, -4\n",
+               disassembly);
+  free(disassembly);
+}
+
+UNIT_TEST(PendingJ) {
+  Assembler assembler(RV_G);
+  Label label;
+  __ j(&label);
+  __ j(&label);
+  __ j(&label);
+  __ Bind(&label);
+  __ j(&label);
+  __ j(&label);
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_G);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ("  00c0006f j +12\n"
+               "  0080006f j +8\n"
+               "  0040006f j +4\n"
+               "  0000006f j +0\n"
+               "  ffdff06f j -4\n",
+               disassembly);
+  free(disassembly);
+}
+
+UNIT_TEST(PendingCB) {
+  Assembler assembler(RV_GC);
+  Label label;
+  __ beqz(A0, &label, Assembler::kNearJump);
+  __ beqz(A0, &label, Assembler::kNearJump);
+  __ beqz(A0, &label, Assembler::kNearJump);
+  __ Bind(&label);
+  __ beqz(A0, &label);
+  __ beqz(A0, &label);
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ("      c119 beqz a0, +6\n"
+               "      c111 beqz a0, +4\n"
+               "      c109 beqz a0, +2\n"
+               "      c101 beqz a0, +0\n"
+               "      dd7d beqz a0, -2\n",
+               disassembly);
+  free(disassembly);
+}
+
+UNIT_TEST(PendingCJ) {
+  Assembler assembler(RV_GC);
+  Label label;
+  __ j(&label, Assembler::kNearJump);
+  __ j(&label, Assembler::kNearJump);
+  __ j(&label, Assembler::kNearJump);
+  __ Bind(&label);
+  __ j(&label);
+  __ j(&label);
+
+  void* buffer = assembler.buffer();
+  size_t size = assembler.size();
+
+  Disassembler disassembler(RV_GC);
+  char* disassembly = disassembler.Disassemble(buffer, size);
+  EXPECT_STREQ("      a019 j +6\n"
+               "      a011 j +4\n"
+               "      a009 j +2\n"
+               "      a001 j +0\n"
+               "      bffd j -2\n",
+               disassembly);
+  free(disassembly);
+}
+
 UNIT_TEST(MacroLoadImmediate_LoadImmediates) {
   for (intptr_t base = -8; base < 7; base++) {
     for (intptr_t shift = 0; shift < XLEN; shift++) {
