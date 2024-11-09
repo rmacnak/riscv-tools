@@ -84,7 +84,8 @@ Simulator::Simulator()
   }
 
   stack_ = Memory::Allocate(kStackSize);
-  set_xreg(SP, Memory::ToGuest(stack_) + kStackSize);
+  stack_base_ = Memory::ToGuest(stack_) + kStackSize;
+  set_xreg(SP, stack_base_);
 }
 
 Simulator::~Simulator() {
@@ -549,94 +550,94 @@ void Simulator::Interpret(CInstruction instr) {
   switch (instr.opcode()) {
     case C_LWSP: {
       uintx_t addr = get_xreg(SP) + instr.spload4_imm();
-      set_xreg(instr.rd(), *Memory::ToHost<int32_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int32_t>(addr, SP));
       break;
     }
 #if XLEN == 32
     case C_FLWSP: {
       uintx_t addr = get_xreg(SP) + instr.spload4_imm();
-      set_fregs(instr.frd(), *Memory::ToHost<float>(addr));
+      set_fregs(instr.frd(), MemoryRead<float>(addr, SP));
       break;
     }
 #else
     case C_LDSP: {
       uintx_t addr = get_xreg(SP) + instr.spload8_imm();
-      set_xreg(instr.rd(), *Memory::ToHost<int64_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int64_t>(addr, SP));
       break;
     }
 #endif
     case C_FLDSP: {
       uintx_t addr = get_xreg(SP) + instr.spload8_imm();
-      set_fregd(instr.frd(), *Memory::ToHost<double>(addr));
+      set_fregd(instr.frd(), MemoryRead<double>(addr, SP));
       break;
     }
     case C_SWSP: {
       uintx_t addr = get_xreg(SP) + instr.spstore4_imm();
-      *Memory::ToHost<uint32_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint32_t>(addr, get_xreg(instr.rs2()), SP);
       break;
     }
 #if XLEN == 32
     case C_FSWSP: {
       uintx_t addr = get_xreg(SP) + instr.spstore4_imm();
-      *Memory::ToHost<float>(addr) = get_fregs(instr.frs2());
+      MemoryWrite<float>(addr, get_fregs(instr.frs2()), SP);
       break;
     }
 #else
     case C_SDSP: {
       uintx_t addr = get_xreg(SP) + instr.spstore8_imm();
-      *Memory::ToHost<uint64_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint64_t>(addr, get_xreg(instr.rs2()), SP);
       break;
     }
 #endif
     case C_FSDSP: {
       uintx_t addr = get_xreg(SP) + instr.spstore8_imm();
-      *Memory::ToHost<double>(addr) = get_fregd(instr.frs2());
+      MemoryWrite<double>(addr, get_fregd(instr.frs2()), SP);
       break;
     }
     case C_LW: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem4_imm();
-      set_xreg(instr.rdp(), *Memory::ToHost<int32_t>(addr));
+      set_xreg(instr.rdp(), MemoryRead<int32_t>(addr, instr.rs1p()));
       break;
     }
 #if XLEN == 32
     case C_FLW: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem4_imm();
-      set_fregs(instr.frdp(), *Memory::ToHost<float>(addr));
+      set_fregs(instr.frdp(), MemoryRead<float>(addr, instr.rs1p()));
       break;
     }
 #else
     case C_LD: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem8_imm();
-      set_xreg(instr.rdp(), *Memory::ToHost<int64_t>(addr));
+      set_xreg(instr.rdp(), MemoryRead<int64_t>(addr, instr.rs1p()));
       break;
     }
 #endif
     case C_FLD: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem8_imm();
-      set_fregd(instr.frdp(), *Memory::ToHost<double>(addr));
+      set_fregd(instr.frdp(), MemoryRead<double>(addr, instr.rs1p()));
       break;
     }
     case C_SW: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem4_imm();
-      *Memory::ToHost<uint32_t>(addr) = get_xreg(instr.rs2p());
+      MemoryWrite<uint32_t>(addr, get_xreg(instr.rs2p()), instr.rs1p());
       break;
     }
 #if XLEN == 32
     case C_FSW: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem4_imm();
-      *Memory::ToHost<float>(addr) = get_fregs(instr.frs2p());
+      MemoryWrite<float>(addr, get_fregs(instr.frs2p()), instr.rs1p());
       break;
     }
 #else
     case C_SD: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem8_imm();
-      *Memory::ToHost<uint64_t>(addr) = get_xreg(instr.rs2p());
+      MemoryWrite<uint64_t>(addr, get_xreg(instr.rs2p()), instr.rs1p());
       break;
     }
 #endif
     case C_FSD: {
       uintx_t addr = get_xreg(instr.rs1p()) + instr.mem8_imm();
-      *Memory::ToHost<double>(addr) = get_fregd(instr.frs2p());
+      MemoryWrite<double>(addr, get_fregd(instr.frs2p()), instr.rs1p());
       break;
     }
     case C_J: {
@@ -744,16 +745,16 @@ void Simulator::Interpret(CInstruction instr) {
           if (instr.shamt() >= XLEN) {
             IllegalInstruction(instr);
           } else {
-            set_xreg(instr.rs1p(),  get_xreg(instr.rs1p()) >> instr.shamt());
+            set_xreg(instr.rs1p(), get_xreg(instr.rs1p()) >> instr.shamt());
           }
           break;
         case C_SRAI:
           if (instr.shamt() >= XLEN) {
             IllegalInstruction(instr);
           } else {
-            set_xreg(instr.rs1p(),
-                     static_cast<intx_t>(get_xreg(instr.rs1p())) >>
-                         instr.i_imm());
+            set_xreg(
+                instr.rs1p(),
+                static_cast<intx_t>(get_xreg(instr.rs1p())) >> instr.shamt());
           }
           break;
         case C_ANDI:
@@ -831,26 +832,26 @@ void Simulator::Interpret(CInstruction instr) {
       switch (instr.encoding() & 0b1111110000000011) {
         case C_LBU: {
           uintx_t addr = get_xreg(instr.rs1p()) + instr.mem1_imm();
-          set_xreg(instr.rdp(), *Memory::ToHost<uint8_t>(addr));
+          set_xreg(instr.rdp(), MemoryRead<uint8_t>(addr, instr.rs1p()));
           break;
         }
         case C_LHU: {
           uintx_t addr = get_xreg(instr.rs1p()) + instr.mem2_imm();
           if ((instr.encoding() & 0b1000000) == 0) {
-            set_xreg(instr.rdp(), *Memory::ToHost<uint16_t>(addr));
+            set_xreg(instr.rdp(), MemoryRead<uint16_t>(addr, instr.rs1p()));
           } else {
-            set_xreg(instr.rdp(), *Memory::ToHost<int16_t>(addr));
+            set_xreg(instr.rdp(), MemoryRead<int16_t>(addr, instr.rs1p()));
           }
           break;
         }
         case C_SB: {
           uintx_t addr = get_xreg(instr.rs1p()) + instr.mem1_imm();
-          *Memory::ToHost<uint8_t>(addr) = get_xreg(instr.rs2p());
+          MemoryWrite<uint8_t>(addr, get_xreg(instr.rs2p()), instr.rs1p());
           break;
         }
         case C_SH: {
           uintx_t addr = get_xreg(instr.rs1p()) + instr.mem2_imm();
-          *Memory::ToHost<uint16_t>(addr) = get_xreg(instr.rs2p());
+          MemoryWrite<uint16_t>(addr, get_xreg(instr.rs2p()), instr.rs1p());
           break;
         }
         default:
@@ -942,26 +943,26 @@ void Simulator::InterpretLOAD(Instruction instr) {
   uintx_t addr = get_xreg(instr.rs1()) + instr.itype_imm();
   switch (instr.funct3()) {
     case LB:
-      set_xreg(instr.rd(), *Memory::ToHost<int8_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int8_t>(addr, instr.rs1()));
       break;
     case LH:
-      set_xreg(instr.rd(), *Memory::ToHost<int16_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int16_t>(addr, instr.rs1()));
       break;
     case LW:
-      set_xreg(instr.rd(), *Memory::ToHost<int32_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int32_t>(addr, instr.rs1()));
       break;
     case LBU:
-      set_xreg(instr.rd(), *Memory::ToHost<uint8_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<uint8_t>(addr, instr.rs1()));
       break;
     case LHU:
-      set_xreg(instr.rd(), *Memory::ToHost<uint16_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<uint16_t>(addr, instr.rs1()));
       break;
 #if XLEN >= 64
     case LWU:
-      set_xreg(instr.rd(), *Memory::ToHost<uint32_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<uint32_t>(addr, instr.rs1()));
       break;
     case LD:
-      set_xreg(instr.rd(), *Memory::ToHost<int64_t>(addr));
+      set_xreg(instr.rd(), MemoryRead<int64_t>(addr, instr.rs1()));
       break;
 #endif  // XLEN >= 64
     default:
@@ -974,10 +975,10 @@ void Simulator::InterpretLOADFP(Instruction instr) {
   uintx_t addr = get_xreg(instr.rs1()) + instr.itype_imm();
   switch (instr.funct3()) {
     case S:
-      set_fregs(instr.frd(), *Memory::ToHost<float>(addr));
+      set_fregs(instr.frd(), MemoryRead<float>(addr, instr.rs1()));
       break;
     case D:
-      set_fregd(instr.frd(), *Memory::ToHost<double>(addr));
+      set_fregd(instr.frd(), MemoryRead<double>(addr, instr.rs1()));
       break;
     default:
       IllegalInstruction(instr);
@@ -989,17 +990,17 @@ void Simulator::InterpretSTORE(Instruction instr) {
   uintx_t addr = get_xreg(instr.rs1()) + instr.stype_imm();
   switch (instr.funct3()) {
     case SB:
-      *Memory::ToHost<uint8_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint8_t>(addr, get_xreg(instr.rs2()), instr.rs1());
       break;
     case SH:
-      *Memory::ToHost<uint16_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint16_t>(addr, get_xreg(instr.rs2()), instr.rs1());
       break;
     case SW:
-      *Memory::ToHost<uint32_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint32_t>(addr, get_xreg(instr.rs2()), instr.rs1());
       break;
 #if XLEN >= 64
     case SD:
-      *Memory::ToHost<uint64_t>(addr) = get_xreg(instr.rs2());
+      MemoryWrite<uint64_t>(addr, get_xreg(instr.rs2()), instr.rs1());
       break;
 #endif  // XLEN >= 64
     default:
@@ -1012,10 +1013,10 @@ void Simulator::InterpretSTOREFP(Instruction instr) {
   uintx_t addr = get_xreg(instr.rs1()) + instr.stype_imm();
   switch (instr.funct3()) {
     case S:
-      *Memory::ToHost<float>(addr) = get_fregs(instr.frs2());
+      MemoryWrite<float>(addr, get_fregs(instr.frs2()), instr.rs1());
       break;
     case D:
-      *Memory::ToHost<double>(addr) = get_fregd(instr.frs2());
+      MemoryWrite<double>(addr, get_fregd(instr.frs2()), instr.rs1());
       break;
     default:
       IllegalInstruction(instr);
@@ -1300,16 +1301,16 @@ void Simulator::InterpretOP_SUB(Instruction instr) {
 void Simulator::InterpretOP_SHADD(Instruction instr) {
   switch (instr.funct3()) {
     case SH1ADD:
-      set_xreg(instr.rd(), (get_xreg(instr.rs1()) << 1) +
-                            get_xreg(instr.rs2()));
+      set_xreg(instr.rd(),
+               (get_xreg(instr.rs1()) << 1) + get_xreg(instr.rs2()));
       break;
     case SH2ADD:
-      set_xreg(instr.rd(), (get_xreg(instr.rs1()) << 2) +
-                            get_xreg(instr.rs2()));
+      set_xreg(instr.rd(),
+               (get_xreg(instr.rs1()) << 2) + get_xreg(instr.rs2()));
       break;
     case SH3ADD:
-      set_xreg(instr.rd(), (get_xreg(instr.rs1()) << 3) +
-                            get_xreg(instr.rs2()));
+      set_xreg(instr.rd(),
+               (get_xreg(instr.rs1()) << 3) + get_xreg(instr.rs2()));
       break;
     default:
       IllegalInstruction(instr);
@@ -1335,10 +1336,12 @@ void Simulator::InterpretOP_MINMAXCLMUL(Instruction instr) {
       set_xreg(instr.rd(), clmul(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
       break;
     case CLMULH:
-      set_xreg(instr.rd(), clmulh(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
+      set_xreg(instr.rd(),
+               clmulh(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
       break;
     case CLMULR:
-      set_xreg(instr.rd(), clmulr(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
+      set_xreg(instr.rd(),
+               clmulr(get_xreg(instr.rs1()), get_xreg(instr.rs2())));
       break;
     default:
       IllegalInstruction(instr);
@@ -1377,12 +1380,12 @@ void Simulator::InterpretOP_BCLRBEXT(Instruction instr) {
 void Simulator::InterpretOP_CZERO(Instruction instr) {
   switch (instr.funct3()) {
     case CZEROEQZ:
-      set_xreg(instr.rd(), get_xreg(instr.rs2()) == 0 ? 0
-                                                      : get_xreg(instr.rs1()));
+      set_xreg(instr.rd(),
+               get_xreg(instr.rs2()) == 0 ? 0 : get_xreg(instr.rs1()));
       break;
     case CZERONEZ:
-      set_xreg(instr.rd(), get_xreg(instr.rs2()) != 0 ? 0
-                                                      : get_xreg(instr.rs1()));
+      set_xreg(instr.rd(),
+               get_xreg(instr.rs2()) != 0 ? 0 : get_xreg(instr.rs1()));
       break;
     default:
       IllegalInstruction(instr);
@@ -2657,6 +2660,32 @@ void Simulator::IllegalInstruction(Instruction instr) {
 void Simulator::IllegalInstruction(CInstruction instr) {
   PrintRegisters();
   FATAL("Illegal instruction: 0x%04x", instr.encoding());
+}
+
+template <typename type>
+type Simulator::MemoryRead(uintx_t addr, Register base) {
+  if ((base == SP) || (base == FP)) {
+    if (((addr + sizeof(type)) > stack_base_) || (addr < get_xreg(SP))) {
+      PrintRegisters();
+      FATAL("Out-of-bounds stack access");
+    }
+  }
+  // Potentially misaligned load.
+  type value;
+  memcpy(&value, Memory::ToHost<type>(addr), sizeof(type));
+  return value;
+}
+
+template <typename type>
+void Simulator::MemoryWrite(uintx_t addr, type value, Register base) {
+  if ((base == SP) || (base == FP)) {
+    if (((addr + sizeof(type)) > stack_base_) || (addr < get_xreg(SP))) {
+      PrintRegisters();
+      FATAL("Out-of-bounds stack access");
+    }
+  }
+  // Potentially misaligned store.
+  memcpy(Memory::ToHost<type>(addr), &value, sizeof(type));
 }
 
 intx_t Simulator::CSRRead(uint16_t csr) {

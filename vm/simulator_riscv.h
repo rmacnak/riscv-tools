@@ -282,6 +282,11 @@ class Simulator {
   void IllegalInstruction(Instruction instr);
   void IllegalInstruction(CInstruction instr);
 
+  template <typename type>
+  type MemoryRead(uintx_t addr, Register base);
+  template <typename type>
+  void MemoryWrite(uintx_t addr, type value, Register base);
+
   intx_t CSRRead(uint16_t csr);
   void CSRWrite(uint16_t csr, intx_t value);
   void CSRSet(uint16_t csr, intx_t mask);
@@ -317,6 +322,7 @@ class Simulator {
   }
 
   void* stack_;
+  uintx_t stack_base_;
   Random random_;
   bool trace_;
 
