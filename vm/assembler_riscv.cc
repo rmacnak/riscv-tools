@@ -1124,7 +1124,7 @@ void Assembler::fmvxw(Register rd, FRegister rs1) {
 
 void Assembler::fmvwx(FRegister rd, Register rs1) {
   ASSERT(Supports(RV_F));
-  EmitRType(FMVWX, FRegister(0), rs1, F3_0, rd, OPFP);
+  EmitRType(FMVWX, Register(0), rs1, F3_0, rd, OPFP);
 }
 
 #if XLEN >= 64
@@ -1355,7 +1355,7 @@ void Assembler::fcvtdlu(FRegister rd, Register rs1, RoundingMode rounding) {
 
 void Assembler::fmvdx(FRegister rd, Register rs1) {
   ASSERT(Supports(RV_D));
-  EmitRType(FMVDX, FRegister(0), rs1, F3_0, rd, OPFP);
+  EmitRType(FMVDX, Register(0), rs1, F3_0, rd, OPFP);
 }
 #endif  // XLEN >= 64
 
@@ -1785,6 +1785,95 @@ void Assembler::amomaxuh(Register rd,
   ASSERT(addr.offset() == 0);
   ASSERT(Supports(RV_Zabha));
   EmitRType(AMOMAXU, order, rs2, addr.base(), WIDTH16, rd, AMO);
+}
+
+void Assembler::flis(FRegister rd, intptr_t index) {
+  ASSERT((index >= 0) && (index < 32));
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMVWX, FRegister(1), FRegister(index), F3_0, rd, OPFP);
+}
+
+void Assembler::flid(FRegister rd, intptr_t index) {
+  ASSERT((index >= 0) && (index < 32));
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMVDX, FRegister(1), FRegister(index), F3_0, rd, OPFP);
+}
+
+void Assembler::fminms(FRegister rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMINMAXS, rs2, rs1, FMINM, rd, OPFP);
+}
+
+void Assembler::fmaxms(FRegister rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMINMAXS, rs2, rs1, FMAXM, rd, OPFP);
+}
+
+void Assembler::fminmd(FRegister rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMINMAXD, rs2, rs1, FMINM, rd, OPFP);
+}
+
+void Assembler::fmaxmd(FRegister rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMINMAXD, rs2, rs1, FMAXM, rd, OPFP);
+}
+
+void Assembler::frounds(FRegister rd, FRegister rs1, RoundingMode rounding) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCVTS, FRegister(4), rs1, rounding, rd, OPFP);
+}
+
+void Assembler::froundnxs(FRegister rd, FRegister rs1, RoundingMode rounding) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCVTS, FRegister(5), rs1, rounding, rd, OPFP);
+}
+
+void Assembler::froundd(FRegister rd, FRegister rs1, RoundingMode rounding) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCVTD, FRegister(4), rs1, rounding, rd, OPFP);
+}
+
+void Assembler::froundnxd(FRegister rd, FRegister rs1, RoundingMode rounding) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCVTD, FRegister(5), rs1, rounding, rd, OPFP);
+}
+
+void Assembler::fcvtmodwd(Register rd, FRegister rs1) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCVTintD, FRegister(8), rs1, RTZ, rd, OPFP);
+}
+
+#if XLEN == 32
+void Assembler::fmvhxd(Register rd, FRegister rs1) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMVHXD, FRegister(1), rs1, F3_0, rd, OPFP);
+}
+
+void Assembler::fmvpdx(FRegister rd, Register rs1, Register rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FMVPDX, rs2, rs1, F3_0, rd, OPFP);
+}
+#endif  // XLEN == 32
+
+void Assembler::fltqs(Register rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCMPS, rs2, rs1, FLTQ, rd, OPFP);
+}
+
+void Assembler::fleqs(Register rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCMPS, rs2, rs1, FLEQ, rd, OPFP);
+}
+
+void Assembler::fltqd(Register rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCMPD, rs2, rs1, FLTQ, rd, OPFP);
+}
+
+void Assembler::fleqd(Register rd, FRegister rs1, FRegister rs2) {
+  ASSERT(Supports(RV_Zfa));
+  EmitRType(FCMPD, rs2, rs1, FLEQ, rd, OPFP);
 }
 
 void Assembler::lb(Register rd, Address addr, std::memory_order order) {
@@ -2355,14 +2444,14 @@ void Assembler::EmitRType(Funct7 funct7,
 }
 
 void Assembler::EmitRType(Funct7 funct7,
-                          FRegister rs2,
+                          Register rs2,
                           Register rs1,
                           Funct3 funct3,
                           FRegister rd,
                           Opcode opcode) {
   uint32_t e = 0;
   e |= EncodeFunct7(funct7);
-  e |= EncodeFRs2(rs2);
+  e |= EncodeRs2(rs2);
   e |= EncodeRs1(rs1);
   e |= EncodeFunct3(funct3);
   e |= EncodeFRd(rd);

@@ -31,8 +31,8 @@ class Expect {
   template <typename E, typename A>
   void StringEquals(const E& expected, const A& actual);
 
-  template <typename T>
-  void BitwiseEquals(const T& expected, const T& actual);
+  template <typename E, typename A>
+  void BitwiseEquals(const E& expected, const A& actual);
 
  private:
   const char* const file_;
@@ -81,9 +81,10 @@ void Expect::StringEquals(const E& expected, const A& actual) {
   Fail("expected:\n<\"%s\">\nbut was:\n<\"%s\">", es.c_str(), as.c_str());
 }
 
-template <typename T>
-void Expect::BitwiseEquals(const T& expected, const T& actual) {
-  if (memcmp(&expected, &actual, sizeof(T)) == 0) return;
+template <typename E, typename A>
+void Expect::BitwiseEquals(const E& expected, const A& actual) {
+  static_assert(sizeof(E) == sizeof(A));
+  if (memcmp(&expected, &actual, sizeof(E)) == 0) return;
   std::ostringstream ess, ass;
   ess << expected;
   ass << actual;
@@ -7420,6 +7421,963 @@ ASM_TEST(AmoMaxUnsignedHalfWord, RV_G | RV_Zabha) {
   EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
             simulator.Call(buffer, Memory::ToGuest(value), -4));
   EXPECT_EQ(-4, *value);
+}
+
+ASM_TEST(FloatLoadImmediateSingle, RV_GC | RV_Zfa) {
+  for (intptr_t i = 0; i < 32; i++) {
+    __ flis(FRegister(i), i);
+  }
+  EXPECT_DISASSEMBLY(
+      "  f0100053 flis ft0, -1.000000\n"
+      "  f01080d3 flis ft1, min\n"
+      "  f0110153 flis ft2, 0.000015\n"
+      "  f01181d3 flis ft3, 0.000031\n"
+      "  f0120253 flis ft4, 0.003906\n"
+      "  f01282d3 flis ft5, 0.007812\n"
+      "  f0130353 flis ft6, 0.062500\n"
+      "  f01383d3 flis ft7, 0.125000\n"
+      "  f0140453 flis fs0, 0.250000\n"
+      "  f01484d3 flis fs1, 0.312500\n"
+      "  f0150553 flis fa0, 0.375000\n"
+      "  f01585d3 flis fa1, 0.437500\n"
+      "  f0160653 flis fa2, 0.500000\n"
+      "  f01686d3 flis fa3, 0.625000\n"
+      "  f0170753 flis fa4, 0.750000\n"
+      "  f01787d3 flis fa5, 0.875000\n"
+      "  f0180853 flis fa6, 1.000000\n"
+      "  f01888d3 flis fa7, 1.250000\n"
+      "  f0190953 flis fs2, 1.500000\n"
+      "  f01989d3 flis fs3, 1.750000\n"
+      "  f01a0a53 flis fs4, 2.000000\n"
+      "  f01a8ad3 flis fs5, 2.500000\n"
+      "  f01b0b53 flis fs6, 3.000000\n"
+      "  f01b8bd3 flis fs7, 4.000000\n"
+      "  f01c0c53 flis fs8, 8.000000\n"
+      "  f01c8cd3 flis fs9, 16.000000\n"
+      "  f01d0d53 flis fs10, 128.000000\n"
+      "  f01d8dd3 flis fs11, 256.000000\n"
+      "  f01e0e53 flis ft8, 32768.000000\n"
+      "  f01e8ed3 flis ft9, 65536.000000\n"
+      "  f01f0f53 flis ft10, inf\n"
+      "  f01f8fd3 flis ft11, nan\n");
+
+  for (intptr_t i = 0; i < 32; i++) {
+    Assembler assembler(RV_GC | RV_Zfa);
+    __ flis(FA0, i);
+    __ ret();
+
+    void* buffer = assembler.buffer();
+    EXPECT_BITEQ(kFlisConstants[i], simulator.CallF(buffer, 0.0f));
+  }
+}
+
+ASM_TEST(FloatLoadImmediateDouble, RV_GC | RV_Zfa) {
+  for (intptr_t i = 0; i < 32; i++) {
+    __ flid(FRegister(i), i);
+  }
+  EXPECT_DISASSEMBLY(
+      "  f2100053 flid ft0, -1.000000\n"
+      "  f21080d3 flid ft1, min\n"
+      "  f2110153 flid ft2, 0.000015\n"
+      "  f21181d3 flid ft3, 0.000031\n"
+      "  f2120253 flid ft4, 0.003906\n"
+      "  f21282d3 flid ft5, 0.007812\n"
+      "  f2130353 flid ft6, 0.062500\n"
+      "  f21383d3 flid ft7, 0.125000\n"
+      "  f2140453 flid fs0, 0.250000\n"
+      "  f21484d3 flid fs1, 0.312500\n"
+      "  f2150553 flid fa0, 0.375000\n"
+      "  f21585d3 flid fa1, 0.437500\n"
+      "  f2160653 flid fa2, 0.500000\n"
+      "  f21686d3 flid fa3, 0.625000\n"
+      "  f2170753 flid fa4, 0.750000\n"
+      "  f21787d3 flid fa5, 0.875000\n"
+      "  f2180853 flid fa6, 1.000000\n"
+      "  f21888d3 flid fa7, 1.250000\n"
+      "  f2190953 flid fs2, 1.500000\n"
+      "  f21989d3 flid fs3, 1.750000\n"
+      "  f21a0a53 flid fs4, 2.000000\n"
+      "  f21a8ad3 flid fs5, 2.500000\n"
+      "  f21b0b53 flid fs6, 3.000000\n"
+      "  f21b8bd3 flid fs7, 4.000000\n"
+      "  f21c0c53 flid fs8, 8.000000\n"
+      "  f21c8cd3 flid fs9, 16.000000\n"
+      "  f21d0d53 flid fs10, 128.000000\n"
+      "  f21d8dd3 flid fs11, 256.000000\n"
+      "  f21e0e53 flid ft8, 32768.000000\n"
+      "  f21e8ed3 flid ft9, 65536.000000\n"
+      "  f21f0f53 flid ft10, inf\n"
+      "  f21f8fd3 flid ft11, nan\n");
+
+  for (intptr_t i = 0; i < 32; i++) {
+    Assembler assembler(RV_GC | RV_Zfa);
+    __ flis(FA0, i);
+    __ ret();
+
+    void* buffer = assembler.buffer();
+    EXPECT_BITEQ(kFlisConstants[i], simulator.CallF(buffer, 0.0f));
+  }
+}
+
+ASM_TEST(SingleMinM, RV_G | RV_Zfa) {
+  __ fminms(FA0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  28b52553 fminm.s fa0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(1.0f, simulator.CallF(buffer, 3.0f, 1.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, 3.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, 5.0f));
+  EXPECT_EQ(-1.0f, simulator.CallF(buffer, 3.0f, -1.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, 3.0f, -3.0f));
+  EXPECT_EQ(-5.0f, simulator.CallF(buffer, 3.0f, -5.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, 1.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, 3.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, 5.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -1.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -3.0f));
+  EXPECT_EQ(-5.0f, simulator.CallF(buffer, -3.0f, -5.0f));
+
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, 0.0f, -0.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f, 0.0f));
+
+  float qNAN = std::numeric_limits<float>::quiet_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, 3.0f, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, 3.0f));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, -3.0f, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, -3.0f));
+
+  float sNAN = std::numeric_limits<float>::signaling_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, 3.0f, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, 3.0f));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, -3.0f, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, -3.0f));
+
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, qNAN));
+}
+
+ASM_TEST(SingleMaxM, RV_G | RV_Zfa) {
+  __ fmaxms(FA0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  28b53553 fmaxm.s fa0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, 1.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, 3.0f));
+  EXPECT_EQ(5.0f, simulator.CallF(buffer, 3.0f, 5.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, -1.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, -3.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, 3.0f, -5.0f));
+  EXPECT_EQ(1.0f, simulator.CallF(buffer, -3.0f, 1.0f));
+  EXPECT_EQ(3.0f, simulator.CallF(buffer, -3.0f, 3.0f));
+  EXPECT_EQ(5.0f, simulator.CallF(buffer, -3.0f, 5.0f));
+  EXPECT_EQ(-1.0f, simulator.CallF(buffer, -3.0f, -1.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -3.0f));
+  EXPECT_EQ(-3.0f, simulator.CallF(buffer, -3.0f, -5.0f));
+
+  EXPECT_BITEQ(0.0f, simulator.CallF(buffer, 0.0f, -0.0f));
+  EXPECT_BITEQ(0.0f, simulator.CallF(buffer, -0.0f, 0.0f));
+
+  float qNAN = std::numeric_limits<float>::quiet_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, 3.0f, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, 3.0f));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, -3.0f, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, -3.0f));
+
+  float sNAN = std::numeric_limits<float>::signaling_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, 3.0f, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, 3.0f));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, -3.0f, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, -3.0f));
+
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallF(buffer, sNAN, qNAN));
+}
+
+ASM_TEST(DoubleMinM, RV_G | RV_Zfa) {
+  __ fminmd(FA0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  2ab52553 fminm.d fa0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(1.0, simulator.CallD(buffer, 3.0, 1.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, 3.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, 5.0));
+  EXPECT_EQ(-1.0, simulator.CallD(buffer, 3.0, -1.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, 3.0, -3.0));
+  EXPECT_EQ(-5.0, simulator.CallD(buffer, 3.0, -5.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, 1.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, 3.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, 5.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -1.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -3.0));
+  EXPECT_EQ(-5.0, simulator.CallD(buffer, -3.0, -5.0));
+
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, 0.0, -0.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0, 0.0));
+
+  double qNAN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, 3.0, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, 3.0));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, -3.0, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, -3.0));
+
+  double sNAN = std::numeric_limits<double>::signaling_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, 3.0, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, 3.0));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, -3.0, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, -3.0));
+
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, qNAN));
+}
+
+ASM_TEST(DoubleMaxM, RV_G | RV_Zfa) {
+  __ fmaxmd(FA0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  2ab53553 fmaxm.d fa0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, 1.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, 3.0));
+  EXPECT_EQ(5.0, simulator.CallD(buffer, 3.0, 5.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, -1.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, -3.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, 3.0, -5.0));
+  EXPECT_EQ(1.0, simulator.CallD(buffer, -3.0, 1.0));
+  EXPECT_EQ(3.0, simulator.CallD(buffer, -3.0, 3.0));
+  EXPECT_EQ(5.0, simulator.CallD(buffer, -3.0, 5.0));
+  EXPECT_EQ(-1.0, simulator.CallD(buffer, -3.0, -1.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -3.0));
+  EXPECT_EQ(-3.0, simulator.CallD(buffer, -3.0, -5.0));
+
+  EXPECT_BITEQ(0.0, simulator.CallD(buffer, 0.0, -0.0));
+  EXPECT_BITEQ(0.0, simulator.CallD(buffer, -0.0, 0.0));
+
+  double qNAN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, 3.0, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, 3.0));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, -3.0, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, -3.0));
+
+  double sNAN = std::numeric_limits<double>::signaling_NaN();
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, 3.0, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, 3.0));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, -3.0, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, -3.0));
+
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, qNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, qNAN, sNAN));
+  EXPECT_BITEQ(qNAN, simulator.CallD(buffer, sNAN, qNAN));
+}
+
+ASM_TEST(RoundSingle, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40450553 fround.s fa0, fa0\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundSingle_RNE, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0, RNE);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40450553 fround.s fa0, fa0\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundSingle_RTZ, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0, RTZ);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40451553 fround.s fa0, fa0, rtz\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundSingle_RDN, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0, RDN);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40452553 fround.s fa0, fa0, rdn\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundSingle_RUP, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0, RUP);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40453553 fround.s fa0, fa0, rup\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundSingle_RMM, RV_G | RV_Zfa) {
+  __ frounds(FA0, FA0, RMM);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  40454553 fround.s fa0, fa0, rmm\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.6f));
+  EXPECT_EQ(-44.0f, simulator.CallF(buffer, -43.5f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.4f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -43.0f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.6f));
+  EXPECT_EQ(-43.0f, simulator.CallF(buffer, -42.5f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.4f));
+  EXPECT_EQ(-42.0f, simulator.CallF(buffer, -42.0f));
+  EXPECT_BITEQ(-0.0f, simulator.CallF(buffer, -0.0f));
+  EXPECT_BITEQ(+0.0f, simulator.CallF(buffer, +0.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.0f));
+  EXPECT_EQ(42.0f, simulator.CallF(buffer, 42.4f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.5f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 42.6f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.0f));
+  EXPECT_EQ(43.0f, simulator.CallF(buffer, 43.4f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.5f));
+  EXPECT_EQ(44.0f, simulator.CallF(buffer, 43.6f));
+
+  EXPECT_EQ(-std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, -std::numeric_limits<float>::infinity()));
+  EXPECT_EQ(std::numeric_limits<float>::infinity(),
+            simulator.CallF(buffer, std::numeric_limits<float>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<float>::quiet_NaN(),
+      simulator.CallF(buffer, std::numeric_limits<float>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42450553 fround.d fa0, fa0\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble_RNE, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0, RNE);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42450553 fround.d fa0, fa0\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble_RTZ, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0, RTZ);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42451553 fround.d fa0, fa0, rtz\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble_RDN, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0, RDN);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42452553 fround.d fa0, fa0, rdn\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble_RUP, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0, RUP);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42453553 fround.d fa0, fa0, rup\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(RoundDouble_RMM, RV_G | RV_Zfa) {
+  __ froundd(FA0, FA0, RMM);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  42454553 fround.d fa0, fa0, rmm\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.6));
+  EXPECT_EQ(-44.0, simulator.CallD(buffer, -43.5));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.4));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -43.0));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.6));
+  EXPECT_EQ(-43.0, simulator.CallD(buffer, -42.5));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.4));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, -42.0));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, -0.0));
+  EXPECT_BITEQ(+0.0, simulator.CallD(buffer, +0.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.0));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, 42.4));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.5));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 42.6));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.0));
+  EXPECT_EQ(43.0, simulator.CallD(buffer, 43.4));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.5));
+  EXPECT_EQ(44.0, simulator.CallD(buffer, 43.6));
+
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(),
+            simulator.CallD(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+ASM_TEST(ModularConvertDoubleToWord, RV_G | RV_Zfa) {
+  __ fcvtmodwd(A0, FA0);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  c2851553 fcvtmod.w.d a0, fa0, rtz\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(-42, simulator.CallI(buffer, -42.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 0.0));
+  EXPECT_EQ(42, simulator.CallI(buffer, 42.0));
+  EXPECT_EQ(sign_extend(kMinInt32),
+            simulator.CallI(buffer, static_cast<double>(kMinInt32)));
+  EXPECT_EQ(sign_extend(kMaxInt32),
+            simulator.CallI(buffer, static_cast<double>(kMaxInt32)));
+  EXPECT_EQ(-1, simulator.CallI(buffer, static_cast<double>(kMaxUint32)));
+  EXPECT_EQ(0, simulator.CallI(buffer, static_cast<double>(kMinInt64)));
+  EXPECT_EQ(0, simulator.CallI(buffer, static_cast<double>(kMaxInt64)));
+  EXPECT_EQ(0, simulator.CallI(buffer, static_cast<double>(kMaxUint64)));
+  EXPECT_EQ(
+      0, simulator.CallI(buffer, -std::numeric_limits<double>::denorm_min()));
+  EXPECT_EQ(0,
+            simulator.CallI(buffer, std::numeric_limits<double>::denorm_min()));
+  EXPECT_EQ(0,
+            simulator.CallI(buffer, -std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(0,
+            simulator.CallI(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(
+      0, simulator.CallI(buffer, std::numeric_limits<double>::signaling_NaN()));
+}
+
+#if XLEN == 32
+ASM_TEST(BitCastDoubleToIntegerHigh, RV_G | RV_Zfa) {
+  __ fmvxw(A0, FA0);
+  __ fmvhxd(A1, FA0);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  e0050553 fmv.x.w a0, fa0\n"
+      "  e21505d3 fmvh.x.d a1, fa0\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(bit_cast<int64_t>(0.0), simulator.CallI64(buffer, 0.0));
+  EXPECT_EQ(bit_cast<int64_t>(-0.0), simulator.CallI64(buffer, -0.0));
+  EXPECT_EQ(bit_cast<int64_t>(42.0), simulator.CallI64(buffer, 42.0));
+  EXPECT_EQ(bit_cast<int64_t>(-42.0), simulator.CallI64(buffer, -42.0));
+  EXPECT_EQ(
+      bit_cast<int64_t>(std::numeric_limits<double>::quiet_NaN()),
+      simulator.CallI64(buffer, std::numeric_limits<double>::quiet_NaN()));
+  EXPECT_EQ(
+      bit_cast<int64_t>(std::numeric_limits<double>::signaling_NaN()),
+      simulator.CallI64(buffer, std::numeric_limits<double>::signaling_NaN()));
+  EXPECT_EQ(bit_cast<int64_t>(std::numeric_limits<double>::infinity()),
+            simulator.CallI64(buffer, std::numeric_limits<double>::infinity()));
+  EXPECT_EQ(
+      bit_cast<int64_t>(-std::numeric_limits<double>::infinity()),
+      simulator.CallI64(buffer, -std::numeric_limits<double>::infinity()));
+}
+
+ASM_TEST(BitCastIntegerPairToDouble, RV_G | RV_Zfa) {
+  __ fmvpdx(FA0, A0, A1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  b2b50553 fmvp.d.x fa0, a0, a1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_BITEQ(0.0, simulator.CallD(buffer, bit_cast<int64_t>(0.0)));
+  EXPECT_BITEQ(-0.0, simulator.CallD(buffer, bit_cast<int64_t>(-0.0)));
+  EXPECT_EQ(42.0, simulator.CallD(buffer, bit_cast<int64_t>(42.0)));
+  EXPECT_EQ(-42.0, simulator.CallD(buffer, bit_cast<int64_t>(-42.0)));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::quiet_NaN(),
+      simulator.CallD(
+          buffer, bit_cast<int64_t>(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_BITEQ(std::numeric_limits<double>::signaling_NaN(),
+               simulator.CallD(
+                   buffer, bit_cast<int64_t>(
+                               std::numeric_limits<double>::signaling_NaN())));
+  EXPECT_BITEQ(
+      std::numeric_limits<double>::infinity(),
+      simulator.CallD(
+          buffer, bit_cast<int64_t>(std::numeric_limits<double>::infinity())));
+  EXPECT_BITEQ(
+      -std::numeric_limits<double>::infinity(),
+      simulator.CallD(
+          buffer, bit_cast<int64_t>(-std::numeric_limits<double>::infinity())));
+}
+#endif  // XLEN == 32
+
+ASM_TEST(SingleLessThanQuiet, RV_G | RV_Zfa) {
+  __ fltqs(A0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  a0b55553 fltq.s a0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, 1.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, 3.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0f, 5.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -1.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -5.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 1.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 3.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 5.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, -1.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0f, -3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0f, -5.0f));
+
+  float qNAN = std::numeric_limits<float>::quiet_NaN();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, 3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0f, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, -3.0f));
+}
+
+ASM_TEST(SingleLessOrEqualQuiet, RV_G | RV_Zfa) {
+  __ fleqs(A0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  a0b54553 fleq.s a0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, 1.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0f, 3.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0f, 5.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -1.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, -5.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 1.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 3.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, 5.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, -1.0f));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0f, -3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0f, -5.0f));
+
+  float qNAN = std::numeric_limits<float>::quiet_NaN();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0f, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, 3.0f));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0f, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, -3.0f));
+}
+
+ASM_TEST(DoubleLessThanQuiet, RV_G | RV_Zfa) {
+  __ fltqd(A0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  a2b55553 fltq.d a0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, 1.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, 3.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0, 5.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -1.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -5.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 1.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 3.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 5.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, -1.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0, -3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0, -5.0));
+
+  double qNAN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, 3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, -3.0));
+}
+
+ASM_TEST(DoubleLessOrEqualQuiet, RV_G | RV_Zfa) {
+  __ fleqd(A0, FA0, FA1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  a2b54553 fleq.d a0, fa0, fa1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, 1.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0, 3.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, 3.0, 5.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -1.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, -5.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 1.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 3.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, 5.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, -1.0));
+  EXPECT_EQ(1, simulator.CallI(buffer, -3.0, -3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0, -5.0));
+
+  double qNAN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_EQ(0, simulator.CallI(buffer, 3.0, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, 3.0));
+  EXPECT_EQ(0, simulator.CallI(buffer, -3.0, qNAN));
+  EXPECT_EQ(0, simulator.CallI(buffer, qNAN, -3.0));
 }
 
 ASM_TEST(LoadByteAcquire, RV_GC | RV_Zalasr) {

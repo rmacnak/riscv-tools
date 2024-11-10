@@ -127,6 +127,21 @@ class Simulator {
     return get_xreg(A0);
   }
 
+  int64_t CallI64(void* function, double arg0, double arg1 = 0.0) {
+    PreservedRegisters preserved;
+    PrepareCall(&preserved);
+    set_fregd(FA0, arg0);
+    set_fregd(FA1, arg1);
+    RunCall(function, &preserved);
+#if XLEN == 32
+    uint64_t hi = static_cast<uint32_t>(get_xreg(A1));
+    uint64_t lo = static_cast<uint32_t>(get_xreg(A0));
+    return (hi << 32) | lo;
+#else
+    return get_xreg(A0);
+#endif
+  }
+
   double CallD(void* function, intx_t arg0, intx_t arg1 = 0) {
     PreservedRegisters preserved;
     PrepareCall(&preserved);
@@ -135,6 +150,16 @@ class Simulator {
     RunCall(function, &preserved);
     return get_fregd(FA0);
   }
+#if XLEN == 32
+  double CallD(void* function, int64_t arg0) {
+    PreservedRegisters preserved;
+    PrepareCall(&preserved);
+    set_xreg(A0, static_cast<uint64_t>(arg0) & 0xFFFFFFFF);
+    set_xreg(A1, static_cast<uint64_t>(arg0) >> 32);
+    RunCall(function, &preserved);
+    return get_fregd(FA0);
+  }
+#endif
   double CallD(void* function,
                double arg0,
                double arg1 = 0.0,
@@ -302,6 +327,11 @@ class Simulator {
 
   static constexpr uint64_t kNaNBox = 0xFFFFFFFF00000000;
 
+  float get_fregs_raw(FRegister rs) const {
+    uint64_t bits64 = bit_cast<uint64_t>(fregs_[rs.encoding()]);
+    uint32_t bits32 = static_cast<uint32_t>(bits64);
+    return bit_cast<float>(bits32);
+  }
   float get_fregs(FRegister rs) const {
     uint64_t bits64 = bit_cast<uint64_t>(fregs_[rs.encoding()]);
     if ((bits64 & kNaNBox) != kNaNBox) {
@@ -356,11 +386,21 @@ class Simulator {
     typedef intx_t (*Function)(float, float);
     return reinterpret_cast<Function>(function)(arg0, arg1);
   }
+  int64_t CallI64(void* function, double arg0, double arg1 = 0.0) {
+    typedef int64_t (*Function)(double, double);
+    return reinterpret_cast<Function>(function)(arg0, arg1);
+  }
 
   double CallD(void* function, intx_t arg0, intx_t arg1 = 0) {
     typedef double (*Function)(intx_t, intx_t);
     return reinterpret_cast<Function>(function)(arg0, arg1);
   }
+#if XLEN == 32
+  double CallD(void* function, int64_t arg0) {
+    typedef double (*Function)(int64_t);
+    return reinterpret_cast<Function>(function)(arg0);
+  }
+#endif
   double CallD(void* function,
                double arg0,
                double arg1 = 0.0,

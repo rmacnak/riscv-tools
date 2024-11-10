@@ -1418,6 +1418,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
         case FMAX:
           Print("fmax.s 'frd, 'frs1, 'frs2", instr, RV_F);
           break;
+        case FMINM:
+          Print("fminm.s 'frd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
+        case FMAXM:
+          Print("fmaxm.s 'frd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
         default:
           UnknownInstruction(instr);
       }
@@ -1433,6 +1439,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
           break;
         case FLE:
           Print("fle.s 'rd, 'frs1, 'frs2", instr, RV_F);
+          break;
+        case FLTQ:
+          Print("fltq.s 'rd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
+        case FLEQ:
+          Print("fleq.s 'rd, 'frs1, 'frs2", instr, RV_Zfa);
           break;
         default:
           UnknownInstruction(instr);
@@ -1492,7 +1504,16 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
       }
       break;
     case FMVWX:
-      Print("fmv.w.x 'frd, 'rs1", instr, RV_F);
+      switch (instr.frs2().encoding()) {
+        case 0:
+          Print("fmv.w.x 'frd, 'rs1", instr, RV_F);
+          break;
+        case 1:
+          Print("flis 'frd, 'flis", instr, RV_Zfa);
+          break;
+        default:
+          UnknownInstruction(instr);
+      }
       break;
     case FADDD:
       Print("fadd.d 'frd, 'frs1, 'frs2'round", instr, RV_D);
@@ -1545,6 +1566,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
         case FMAX:
           Print("fmax.d 'frd, 'frs1, 'frs2", instr, RV_D);
           break;
+        case FMINM:
+          Print("fminm.d 'frd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
+        case FMAXM:
+          Print("fmaxm.d 'frd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
         default:
           UnknownInstruction(instr);
       }
@@ -1555,6 +1582,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
         case 1:
           Print("fcvt.s.d 'frd, 'frs1'round", instr, RV_D);
           break;
+        case 4:
+          Print("fround.s 'frd, 'frs1'round", instr, RV_Zfa);
+          break;
+        case 5:
+          Print("froundnx.s 'frd, 'frs1'round", instr, RV_Zfa);
+          break;
         default:
           UnknownInstruction(instr);
       }
@@ -1564,6 +1597,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
       switch (instr.rs2().encoding()) {
         case 0:
           Print("fcvt.d.s 'frd, 'frs1'round", instr, RV_D);
+          break;
+        case 4:
+          Print("fround.d 'frd, 'frs1'round", instr, RV_Zfa);
+          break;
+        case 5:
+          Print("froundnx.d 'frd, 'frs1'round", instr, RV_Zfa);
           break;
         default:
           UnknownInstruction(instr);
@@ -1581,6 +1620,12 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
         case FLE:
           Print("fle.d 'rd, 'frs1, 'frs2", instr, RV_D);
           break;
+        case FLTQ:
+          Print("fltq.d 'rd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
+        case FLEQ:
+          Print("fleq.d 'rd, 'frs1, 'frs2", instr, RV_Zfa);
+          break;
         default:
           UnknownInstruction(instr);
       }
@@ -1591,11 +1636,22 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
         case 1:
           Print("fclass.d 'rd, 'frs1", instr, RV_D);
           break;
-#if XLEN >= 64
         case 0:
-          Print("fmv.x.d 'rd, 'frs1", instr, RV_D);
-          break;
+          switch (instr.rs2().encoding()) {
+#if XLEN >= 64
+            case 0:
+              Print("fmv.x.d 'rd, 'frs1", instr, RV_D);
+              break;
 #endif
+#if XLEN == 32
+            case 1:
+              Print("fmvh.x.d 'rd, 'frs1", instr, RV_Zfa);
+              break;
+#endif
+            default:
+              UnknownInstruction(instr);
+          }
+          break;
         default:
           UnknownInstruction(instr);
       }
@@ -1604,6 +1660,9 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
       switch (instr.rs2().encoding()) {
         case W:
           Print("fcvt.w.d 'rd, 'frs1'round", instr, RV_D);
+          break;
+        case 8:
+          Print("fcvtmod.w.d 'rd, 'frs1'round", instr, RV_Zfa);
           break;
         case WU:
           Print("fcvt.wu.d 'rd, 'frs1'round", instr, RV_D);
@@ -1640,9 +1699,23 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
           UnknownInstruction(instr);
       }
       break;
-#if XLEN >= 64
     case FMVDX:
-      Print("fmv.d.x 'frd, 'rs1", instr, RV_D);
+      switch (instr.frs2().encoding()) {
+#if XLEN >= 64
+        case 0:
+          Print("fmv.d.x 'frd, 'rs1", instr, RV_D);
+          break;
+#endif
+        case 1:
+          Print("flid 'frd, 'flid", instr, RV_Zfa);
+          break;
+        default:
+          UnknownInstruction(instr);
+      }
+      break;
+#if XLEN == 32
+    case FMVPDX:
+      Print("fmvp.d.x 'frd, 'rs1, 'rs2", instr, RV_Zfa);
       break;
 #endif
     default:
@@ -1814,6 +1887,40 @@ const char* Disassembler::PrintOption(const char* format, Instruction instr) {
     return format + 4;
   } else if (STRING_STARTS_WITH(format, "frs3")) {
     buffer_.Print("%s", kFRegisterNames[instr.frs3().encoding()]);
+    return format + 4;
+  } else if (STRING_STARTS_WITH(format, "flis")) {
+    intptr_t index = instr.frs1().encoding();
+    switch (index) {
+      case 1:
+        buffer_.Print("min");
+        break;
+      case 30:
+        buffer_.Print("inf");
+        break;
+      case 31:
+        buffer_.Print("nan");
+        break;
+      default:
+        buffer_.Print("%f", bit_cast<float>(kFlisConstants[index]));
+        break;
+    }
+    return format + 4;
+  } else if (STRING_STARTS_WITH(format, "flid")) {
+    intptr_t index = instr.frs1().encoding();
+    switch (index) {
+      case 1:
+        buffer_.Print("min");
+        break;
+      case 30:
+        buffer_.Print("inf");
+        break;
+      case 31:
+        buffer_.Print("nan");
+        break;
+      default:
+        buffer_.Print("%lf", bit_cast<double>(kFlidConstants[index]));
+        break;
+    }
     return format + 4;
   }
 

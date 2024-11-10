@@ -68,6 +68,36 @@ class MacroAssembler : public Assembler {
     }
   }
 
+  void LoadDImmediate(FRegister rd, double dimm) {
+    uint64_t iimm = bit_cast<uint64_t>(dimm);
+#if XLEN >= 64
+    if (iimm == 0) {
+      fmvdx(rd, ZERO);
+      return;
+    }
+#endif
+    if (Supports(RV_Zfa)) {
+      for (intptr_t i = 0; i < 32; i++) {
+        if (kFlidConstants[i] == iimm) {
+          flid(rd, i);
+          return;
+        }
+      }
+    }
+#if XLEN >= 64
+    LoadImmediate(TMP, iimm);
+    fmvdx(rd, TMP);
+#else
+    subi(SP, SP, 16);
+    LoadImmediate(TMP, static_cast<uint32_t>(iimm));
+    sw(TMP, Address(SP, 0));
+    LoadImmediate(TMP, static_cast<uint32_t>(iimm >> 32));
+    sw(TMP, Address(SP, 4));
+    fld(rd, Address(SP, 0));
+    addi(SP, SP, 16);
+#endif
+  }
+
   Address PrepareLargeOffset(Address address) {
     if (IsITypeImm(address.offset())) {
       return address;
@@ -362,9 +392,19 @@ class MacroAssembler : public Assembler {
                      Register rs_hi,
                      Register rs_lo,
                      intptr_t shift) {
-    //rd_hi = rs_hi << shift;
-    //| rs_lo >> (XLEN - shift);
-    //rd_lo = rs_lo << shift;
+    if (shift < 32) {
+      srli(rd_hi, rs_lo, 32 - shift);
+      slli(TMP, rs_hi, shift);
+      or_(rd_hi, rd_hi, TMP);
+      slli(rd_lo, rs_lo, shift);
+    } else {
+      if (shift == 32) {
+        mv(rd_hi, rs_lo);
+      } else {
+        slli(rd_hi, rs_lo, shift - 32);
+      }
+      li(rd_lo, 0);
+    }
   }
 
   void BranchAnyMask(Register rs, intptr_t mask, Label* label) {
