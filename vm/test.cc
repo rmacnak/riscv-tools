@@ -120,9 +120,19 @@ class UnitTest {
   static const UnitTest kRegister##name(#name, UnitTest_##name);               \
   void UnitTest_##name()
 
+bool CanRun(ExtensionSet extensions) {
+#if defined(USING_SIMULATOR)
+  return true;
+#else
+  // Extensions not yet available in QEMU.
+  return !extensions.Includes(RV_Zalasr) && !extensions.Includes(RV_Zabha);
+#endif
+}
+
 #define ASM_TEST(name, extensions)                                             \
   void AsmTest_##name(Assembler& assembler, Simulator& simulator);             \
   UNIT_TEST(name) {                                                            \
+    if (!CanRun(extensions)) return;                                           \
     Assembler assembler(extensions);                                           \
     Simulator simulator;                                                       \
     AsmTest_##name(assembler, simulator);                                      \
@@ -7846,7 +7856,7 @@ TEST_ENCODING(intptr_t, CShamt)
 }  // namespace psoup
 
 int main(int argc, char** argv) {
-  psoup::Memory::Startup(64 * MB);
+  psoup::Memory::Startup(128 * MB);
   for (psoup::UnitTest* test = psoup::tests_; test != nullptr;
        test = test->next()) {
     test->Run();

@@ -1,59 +1,59 @@
-run_test: out out/test_rv64 out/test_rv32
-	./out/test_rv64
-	./out/test_rv32
+run_test: out/rv64 out/rv64/test out/rv32/test
+	./out/rv64/test
+	./out/rv32/test
 
-out:
-	mkdir -p out
+CXXFLAGS += -O2 -g -std=c++17 -Werror -Wall -Wextra -Wnon-virtual-dtor -Wvla -Wno-unused-parameter -DDEBUG -fno-rtti -fno-exceptions -I.
 
-CFLAGS64 = -O2 -g -std=c++17 -Werror -Wall -Wextra -Wnon-virtual-dtor -Wvla -Wno-unused-parameter -DDEBUG -DXLEN=64 -fno-rtti -fno-exceptions -I.
+out/rv64:
+	mkdir -p out/rv64
 
-out/test_rv64: out/simulator64.o out/disassembler64.o out/assembler64.o out/test64.o out/assert64.o out/os_macos64.o out/os_linux64.o
-	$(CXX) $(CFLAGS64) -lm -o out/test_rv64 out/simulator64.o out/disassembler64.o out/assembler64.o out/test64.o out/assert64.o out/os_macos64.o out/os_linux64.o
+out/rv64/assembler.o: vm/assembler_riscv.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/assembler.o vm/assembler_riscv.cc
 
-out/assembler64.o: vm/assembler_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/assembler64.o vm/assembler_riscv.cc
+out/rv64/assert.o: vm/assert.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/assert.o vm/assert.cc
 
-out/assert64.o: vm/assert.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/assert64.o vm/assert.cc
+out/rv64/disassembler.o: vm/disassembler_riscv.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/disassembler.o vm/disassembler_riscv.cc
 
-out/disassembler64.o: vm/disassembler_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/disassembler64.o vm/disassembler_riscv.cc
+out/rv64/simulator.o: vm/simulator_riscv.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/simulator.o vm/simulator_riscv.cc
 
-out/simulator64.o: vm/simulator_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/simulator64.o vm/simulator_riscv.cc
+out/rv64/os_macos.o: vm/os_macos.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/os_macos.o vm/os_macos.cc
 
-out/os_macos64.o: vm/os_macos.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/os_macos64.o vm/os_macos.cc
+out/rv64/os_linux.o: vm/os_linux.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/os_linux.o vm/os_linux.cc
 
-out/os_linux64.o: vm/os_linux.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/os_linux64.o vm/os_linux.cc
+out/rv64/test.o: vm/test.cc vm/*.h Makefile out/rv64
+	$(CXX) $(CXXFLAGS) -DXLEN=64 -c -o out/rv64/test.o vm/test.cc
 
-out/test64.o: vm/test.cc vm/*.h Makefile
-	$(CXX) $(CFLAGS64) -c -o out/test64.o vm/test.cc
+out/rv64/test: out/rv64/simulator.o out/rv64/disassembler.o out/rv64/assembler.o out/rv64/test.o out/rv64/assert.o out/rv64/os_macos.o out/rv64/os_linux.o
+	$(CXX) $(CXXFLAGS) -lm -o out/rv64/test out/rv64/simulator.o out/rv64/disassembler.o out/rv64/assembler.o out/rv64/test.o out/rv64/assert.o out/rv64/os_macos.o out/rv64/os_linux.o
 
-CFLAGSc64 = -O2 -g -std=c++17 -Werror -Wall -Wextra -Wnon-virtual-dtor -Wvla -Wno-unused-parameter -DDEBUG -DXLEN=32 -fno-rtti -fno-exceptions -I.
+out/rv32:
+	mkdir -p out/rv32
 
-out/test_rv32: out/simulatorc64.o out/disassemblerc64.o out/assemblerc64.o out/testc64.o out/assertc64.o out/os_macosc64.o out/os_linuxc64.o
-	$(CXX) $(CFLAGSc64) -lm -o out/test_rv32 out/simulatorc64.o out/disassemblerc64.o out/assemblerc64.o out/testc64.o out/assertc64.o out/os_macosc64.o out/os_linuxc64.o
+out/rv32/assembler.o: vm/assembler_riscv.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/assembler.o vm/assembler_riscv.cc
 
-out/assemblerc64.o: vm/assembler_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/assemblerc64.o vm/assembler_riscv.cc
+out/rv32/assert.o: vm/assert.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/assert.o vm/assert.cc
 
-out/assertc64.o: vm/assert.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/assertc64.o vm/assert.cc
+out/rv32/disassembler.o: vm/disassembler_riscv.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/disassembler.o vm/disassembler_riscv.cc
 
-out/disassemblerc64.o: vm/disassembler_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/disassemblerc64.o vm/disassembler_riscv.cc
+out/rv32/simulator.o: vm/simulator_riscv.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/simulator.o vm/simulator_riscv.cc
 
-out/simulatorc64.o: vm/simulator_riscv.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/simulatorc64.o vm/simulator_riscv.cc
+out/rv32/os_macos.o: vm/os_macos.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/os_macos.o vm/os_macos.cc
 
-out/os_macosc64.o: vm/os_macos.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/os_macosc64.o vm/os_macos.cc
+out/rv32/os_linux.o: vm/os_linux.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/os_linux.o vm/os_linux.cc
 
-out/os_linuxc64.o: vm/os_linux.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/os_linuxc64.o vm/os_linux.cc
+out/rv32/test.o: vm/test.cc vm/*.h Makefile out/rv32
+	$(CXX) $(CXXFLAGS) -DXLEN=32 -c -o out/rv32/test.o vm/test.cc
 
-out/testc64.o: vm/test.cc vm/*.h Makefile
-	$(CXX) $(CFLAGSc64) -c -o out/testc64.o vm/test.cc
-
+out/rv32/test: out/rv32/simulator.o out/rv32/disassembler.o out/rv32/assembler.o out/rv32/test.o out/rv32/assert.o out/rv32/os_macos.o out/rv32/os_linux.o
+	$(CXX) $(CXXFLAGS) -lm -o out/rv32/test out/rv32/simulator.o out/rv32/disassembler.o out/rv32/assembler.o out/rv32/test.o out/rv32/assert.o out/rv32/os_macos.o out/rv32/os_linux.o

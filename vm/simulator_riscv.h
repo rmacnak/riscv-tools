@@ -47,11 +47,9 @@ class Memory {
   }
 
  private:
-#if XLEN != HOST_XLEN
   static uintptr_t guest_base_;
   static uintptr_t guest_size_;
   static uintptr_t top_;
-#endif
 };
 
 // Allows callouts from the simulation to the host.

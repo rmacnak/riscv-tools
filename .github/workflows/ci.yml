@@ -8,9 +8,27 @@ on:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: make -j
+      - name: Install Dependencies
+        run: sudo apt install g++ g++-riscv64-linux-gnu qemu-user
+      - name: Build Host 32
+        run: |
+          rm -rf out
+          make -j out/rv32/test
+      - name: Test Host 32
+        run: out/rv32/test
+      - name: Build Host 64
+        run: |
+          rm -rf out
+          make -j out/rv64/test
+      - name: Test Host 64
+        run: out/rv64/test
+      - name: Build Cross 64
+        run: |
+          rm -rf out
+          CXX=riscv64-linux-gnu-g++ make -j out/rv64/test
+      - name: Test Cross 64
+        run: qemu-riscv64 -L /usr/riscv64-linux-gnu/ out/rv64/test

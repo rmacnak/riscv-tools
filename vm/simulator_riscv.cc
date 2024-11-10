@@ -15,16 +15,16 @@
 
 namespace psoup {
 
-#if XLEN != HOST_XLEN
 uintptr_t Memory::guest_base_ = 0;
 uintptr_t Memory::guest_size_ = 0;
 uintptr_t Memory::top_ = 0;
-#endif
 
 void Memory::Startup(size_t size) {
-#if XLEN != HOST_XLEN
-  void* result =
-      mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+  int prot = PROT_READ | PROT_WRITE;
+#if defined(__riscv)
+  prot = prot | PROT_EXEC;
+#endif
+  void* result = mmap(0, size, prot, MAP_ANON | MAP_PRIVATE, -1, 0);
   if (result == MAP_FAILED) {
     perror("mmap");
     abort();
@@ -32,36 +32,25 @@ void Memory::Startup(size_t size) {
 
   guest_base_ = top_ = reinterpret_cast<uintptr_t>(result);
   guest_size_ = size;
-#endif
 }
 
 void Memory::Shutdown() {
-#if XLEN != HOST_XLEN
   int result = munmap(reinterpret_cast<void*>(guest_base_), guest_size_);
   if (result != 0) {
     perror("munmap");
     abort();
   }
-#endif
 }
 
 void* Memory::Allocate(size_t size) {
-#if XLEN == HOST_XLEN
-  return malloc(size);
-#else
   uintptr_t result = top_;
   top_ += size;
   top_ = (top_ + 7) & ~7;
   return reinterpret_cast<void*>(result);
-#endif
 }
 
 void Memory::Free(void* ptr) {
-#if XLEN == HOST_XLEN
-  free(ptr);
-#else
   // UNIMPLEMENTED: Leaking...
-#endif
 }
 
 #if defined(USING_SIMULATOR)
