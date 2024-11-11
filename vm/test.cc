@@ -7214,13 +7214,13 @@ ASM_TEST(AmoMinUnsignedByte, RV_G | RV_Zabha) {
   *value = -7;
 
   void* buffer = assembler.buffer();
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -4));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -7));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -11));
   EXPECT_EQ(-11, *value);
 }
@@ -7237,13 +7237,13 @@ ASM_TEST(AmoMaxUnsignedByte, RV_G | RV_Zabha) {
   *value = -7;
 
   void* buffer = assembler.buffer();
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -11));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -7));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint8_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -4));
   EXPECT_EQ(-4, *value);
 }
@@ -7388,13 +7388,13 @@ ASM_TEST(AmoMinUnsignedHalfWord, RV_G | RV_Zabha) {
   *value = -7;
 
   void* buffer = assembler.buffer();
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -4));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -7));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -11));
   EXPECT_EQ(-11, *value);
 }
@@ -7412,13 +7412,13 @@ ASM_TEST(AmoMaxUnsignedHalfWord, RV_G | RV_Zabha) {
   *value = -7;
 
   void* buffer = assembler.buffer();
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -11));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -7));
   EXPECT_EQ(-7, *value);
-  EXPECT_EQ(sign_extend(static_cast<uint16_t>(-7)),
+  EXPECT_EQ(-7,
             simulator.Call(buffer, Memory::ToGuest(value), -4));
   EXPECT_EQ(-4, *value);
 }

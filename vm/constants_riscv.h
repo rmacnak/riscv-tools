@@ -48,11 +48,23 @@ inline int32_t SignExtend(int N, int32_t value) {
   return (value << (32 - N)) >> (32 - N);
 }
 
+inline intx_t sign_extend(int8_t x) {
+  return static_cast<intx_t>(x);
+}
+inline intx_t sign_extend(int16_t x) {
+  return static_cast<intx_t>(x);
+}
 inline intx_t sign_extend(int32_t x) {
   return static_cast<intx_t>(x);
 }
 inline intx_t sign_extend(int64_t x) {
   return static_cast<intx_t>(x);
+}
+inline intx_t sign_extend(uint8_t x) {
+  return static_cast<intx_t>(static_cast<int8_t>(x));
+}
+inline intx_t sign_extend(uint16_t x) {
+  return static_cast<intx_t>(static_cast<int16_t>(x));
 }
 inline intx_t sign_extend(uint32_t x) {
   return static_cast<intx_t>(static_cast<int32_t>(x));
