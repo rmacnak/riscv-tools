@@ -248,8 +248,14 @@ void Disassembler::DisassembleInstruction(CInstruction instr) {
     case C_LUI:
       if (instr.rd() == SP) {
         Print("addi 'rd, 'rs1, 'i16imm", instr, RV_C);
-      } else {
+      } else if ((instr.rd() != ZERO) && (instr.u_imm() != 0)) {
         Print("lui 'rd, 'uimm", instr, RV_C);
+      } else if (instr.encoding() == C_SSPUSH) {
+        Print("sspush ra", instr, RV_Zicfiss | RV_C);
+      } else if (instr.encoding() == C_SSPOPCHK) {
+        Print("sspopchk t0", instr, RV_Zicfiss | RV_C);
+      } else {
+        UnknownInstruction(instr);
       }
       break;
     case C_ADDI:
@@ -1071,6 +1077,22 @@ void Disassembler::DisassembleSYSTEM(Instruction instr) {
           UnknownInstruction(instr);
       }
       break;
+    case F3_100: {
+      if ((instr.funct7() == SSPUSH) && (instr.rd() == ZERO) &&
+          (instr.rs1() == ZERO) &&
+          ((instr.rs2() == Register(1)) || (instr.rs2() == Register(5)))) {
+        Print("sspush 'rs2", instr, RV_Zicfiss);
+      } else if ((instr.funct12() == SSPOPCHK) && (instr.rd() == ZERO) &&
+                 ((instr.rs1() == Register(1)) ||
+                  (instr.rs1() == Register(5)))) {
+        Print("sspopchk 'rs1", instr, RV_Zicfiss);
+      } else if ((instr.funct12() == SSRDP) && (instr.rs1() == ZERO)) {
+        Print("ssrdp 'rd", instr, RV_Zicfiss);
+      } else {
+        UnknownInstruction(instr);
+      }
+      break;
+    }
     case CSRRW:
       if (instr.rd() == ZERO) {
         Print("csrw 'csr, 'rs1", instr, RV_I);
@@ -1260,6 +1282,9 @@ void Disassembler::DisassembleAMO32(Instruction instr) {
     case STOREORDERED:
       Print("sw'order 'rs2, ('rs1)", instr, RV_Zalasr);
       break;
+    case SSAMOSWAP:
+      Print("ssamoswap.w'order 'rd, 'rs2, ('rs1)", instr, RV_Zicfiss);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1306,6 +1331,9 @@ void Disassembler::DisassembleAMO64(Instruction instr) {
       break;
     case STOREORDERED:
       Print("sd'order 'rs2, ('rs1)", instr, RV_Zalasr);
+      break;
+    case SSAMOSWAP:
+      Print("ssamoswap.d'order 'rd, 'rs2, ('rs1)", instr, RV_Zicfiss);
       break;
 #endif
     default:

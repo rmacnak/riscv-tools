@@ -75,9 +75,14 @@ Simulator::Simulator()
   stack_ = Memory::Allocate(kStackSize);
   stack_base_ = Memory::ToGuest(stack_) + kStackSize;
   set_xreg(SP, stack_base_);
+
+  shadow_stack_ = Memory::Allocate(kStackSize);
+  ssp_ = Memory::ToGuest(shadow_stack_) + kStackSize;
+  ss_enabled_ = true;
 }
 
 Simulator::~Simulator() {
+  Memory::Free(shadow_stack_);
   Memory::Free(stack_);
 }
 
@@ -95,6 +100,7 @@ void Simulator::PrepareCall(PreservedRegisters* preserved) {
       fregs_[i] = bit_cast<double>(random_.NextUInt64());
     }
   }
+  preserved->ssp = ssp_;
 #endif
 }
 
@@ -141,6 +147,7 @@ void Simulator::RunCall(void* function, PreservedRegisters* preserved) {
              bit_cast<uint64_t>(preserved->fregs[i]));
     }
   }
+  ASSERT(ssp_ == preserved->ssp);
 #endif
 }
 
@@ -695,10 +702,24 @@ void Simulator::Interpret(CInstruction instr) {
           set_xreg(instr.rd(),
                    get_xreg(instr.rs1()) + sign_extend(instr.i16_imm()));
         }
-      } else if ((instr.rd() == ZERO) || (instr.u_imm() == 0)) {
-        IllegalInstruction(instr);
-      } else {
+      } else if ((instr.rd() != ZERO) && (instr.u_imm() != 0)) {
         set_xreg(instr.rd(), sign_extend(instr.u_imm()));
+      } else if (instr.encoding() == C_SSPUSH) {
+        if (ss_enabled_) {
+          uintx_t ra = get_xreg(Register(1));
+          ssp_ -= sizeof(uintx_t);
+          *Memory::ToHost<uintx_t>(ssp_) = ra;
+        }
+      } else if (instr.encoding() == C_SSPOPCHK) {
+        if (ss_enabled_) {
+          uintx_t ra = *Memory::ToHost<uintx_t>(ssp_);
+          ssp_ += sizeof(uintx_t);
+          if (ra != get_xreg(Register(5))) {
+            FATAL("Corrupt control flow");
+          }
+        }
+      } else {
+        IllegalInstruction(instr);
       }
       break;
     case C_ADDI:
@@ -1576,6 +1597,32 @@ void Simulator::InterpretSYSTEM(Instruction instr) {
           IllegalInstruction(instr);
       }
       break;
+    case F3_100: {
+      if ((instr.funct7() == SSPUSH) && (instr.rd() == ZERO) &&
+          (instr.rs1() == ZERO) &&
+          ((instr.rs2() == Register(1)) || (instr.rs2() == Register(5)))) {
+        if (ss_enabled_) {
+          uintx_t ra = get_xreg(instr.rs2());
+          ssp_ -= sizeof(uintx_t);
+          *Memory::ToHost<uintx_t>(ssp_) = ra;
+        }
+      } else if ((instr.funct12() == SSPOPCHK) && (instr.rd() == ZERO) &&
+                 ((instr.rs1() == Register(1)) ||
+                  (instr.rs1() == Register(5)))) {
+        if (ss_enabled_) {
+          uintx_t ra = *Memory::ToHost<uintx_t>(ssp_);
+          ssp_ += sizeof(uintx_t);
+          if (ra != get_xreg(instr.rs1())) {
+            FATAL("Corrupt control flow");
+          }
+        }
+      } else if ((instr.funct12() == SSRDP) && (instr.rs1() == ZERO)) {
+        set_xreg(instr.rd(), ss_enabled_ ? ssp_ : 0);
+      } else {
+        IllegalInstruction(instr);
+      }
+      break;
+    }
     case CSRRW: {
       if (instr.rd() == ZERO) {
         // No read effect.
@@ -2827,6 +2874,9 @@ enum ControlStatusRegister {
   fflags = 0x001,
   frm = 0x002,
   fcsr = 0x003,
+
+  ssp = 0x011,
+
   cycle = 0xC00,
   time = 0xC01,
   instret = 0xC02,
@@ -2877,6 +2927,8 @@ intx_t Simulator::CSRRead(uint16_t csr) {
   switch (csr) {
     case fcsr:
       return fcsr_;
+    case ssp:
+      return ssp_;
     case cycle:
       return instret_ / 2;
     case time:
@@ -2897,7 +2949,13 @@ intx_t Simulator::CSRRead(uint16_t csr) {
 }
 
 void Simulator::CSRWrite(uint16_t csr, intx_t value) {
-  UNIMPLEMENTED();
+  switch (csr) {
+    case ssp:
+      ssp_ = value;
+      break;
+    default:
+      UNIMPLEMENTED();
+  }
 }
 
 void Simulator::CSRSet(uint16_t csr, intx_t mask) {

@@ -126,7 +126,9 @@ bool CanRun(ExtensionSet extensions) {
   return true;
 #else
   // Extensions not yet available in QEMU.
-  return !extensions.Includes(RV_Zalasr) && !extensions.Includes(RV_Zabha);
+  return !extensions.Includes(RV_Zalasr) &&
+         !extensions.Includes(RV_Zabha) &&
+         !extensions.Includes(RV_Zicfiss);
 #endif
 }
 
@@ -8511,6 +8513,137 @@ ASM_TEST(StoreDoubleWordRelease, RV_GC | RV_Zalasr) {
   EXPECT_EQ(-42, values[0]);
 }
 #endif  // XLEN >= 64
+
+ASM_TEST(ShadowStack, RV_G | RV_Zicfiss) {
+  Label f;
+  __ sspush(RA);
+  __ jal(RA2, &f);
+  __ sspopchk(RA);
+  __ ret();
+  __ Bind(&f);
+  __ sspush(RA2);
+  __ sspopchk(RA2);
+  __ jr(RA2);
+
+  EXPECT_DISASSEMBLY(
+      "  ce104073 sspush ra\n"
+      "  00c002ef jal t0, +12\n"
+      "  cdc0c073 sspopchk ra\n"
+      "  00008067 ret\n"
+      "  ce504073 sspush t0\n"
+      "  cdc2c073 sspopchk t0\n"
+      "  00028067 jr t0\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+}
+
+ASM_TEST(CompressedShadowStack, RV_GC | RV_Zicfiss) {
+  Label f;
+  __ sspush(RA);
+  __ jal(RA2, &f);
+  __ sspopchk(RA);
+  __ ret();
+  __ Bind(&f);
+  __ sspush(RA2);
+  __ sspopchk(RA2);
+  __ jr(RA2);
+
+  EXPECT_DISASSEMBLY(
+      "      6081 sspush ra\n"
+      "  00a002ef jal t0, +10\n"
+      "  cdc0c073 sspopchk ra\n"
+      "      8082 ret\n"
+      "  ce504073 sspush t0\n"
+      "      6281 sspopchk t0\n"
+      "      8282 jr t0\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.Call(buffer, 0));
+}
+
+ASM_TEST(ShadowStackAmoSwapWord, RV_G | RV_Zicfiss) {
+  __ ssamoswapw(A0, A1, Address(A0));
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  48b5252f ssamoswap.w a0, a1, (a0)\n"
+      "  00008067 ret\n");
+
+  // Not running: would trap.
+}
+
+#if XLEN >= 64
+ASM_TEST(ShadowStackAmoSwapDoubleWord, RV_G | RV_Zicfiss) {
+  __ ssamoswapd(A0, A1, Address(A0));
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  48b5352f ssamoswap.d a0, a1, (a0)\n"
+      "  00008067 ret\n");
+
+  // Not running: would trap.
+}
+#endif  // XLEN >= 64
+
+ASM_TEST(ShadowStackLongJump, RV_G | RV_Zicfiss) {
+  Label nlr, func2, setjmp, longjmp, ss_disabled;
+  __ sspush(RA);
+  __ subi(SP, SP, 6 * kWordSize);
+  __ sx(RA, Address(SP, 5 * kWordSize));
+  __ sx(FP, Address(SP, 4 * kWordSize));
+  __ addi(FP, SP, 6 * kWordSize);
+  __ addi(A0, SP, 0 * kWordSize);
+  __ jal(&setjmp);
+  __ bnez(A0, &nlr);
+  __ addi(A0, SP, 0 * kWordSize);
+  __ jal(&func2);
+  __ Bind(&nlr);
+  __ lx(FP, Address(SP, 4 * kWordSize));
+  __ lx(RA, Address(SP, 5 * kWordSize));
+  __ addi(SP, SP, 6 * kWordSize);
+  __ sspopchk(RA);
+  __ ret();
+
+  __ Bind(&func2);
+  __ sspush(RA);
+  __ subi(SP, SP, 2 * kWordSize);
+  __ sx(RA, Address(SP, 1 * kWordSize));
+  __ sx(FP, Address(SP, 0 * kWordSize));
+  __ addi(FP, SP, 1 * kWordSize);
+  __ jal(&longjmp);
+  __ lx(FP, Address(SP, 0 * kWordSize));
+  __ lx(RA, Address(SP, 1 * kWordSize));
+  __ addi(SP, SP, 2 * kWordSize);
+  __ sspopchk(RA);
+  __ ret();
+
+  __ Bind(&setjmp);
+  __ sx(RA, Address(A0, 0 * kWordSize));
+  __ sx(SP, Address(A0, 1 * kWordSize));
+  __ sx(FP, Address(A0, 2 * kWordSize));
+  __ ssrdp(A1);
+  __ sx(A1, Address(A0, 3 * kWordSize));
+  __ li(A0, 0);
+  __ ret();
+
+  __ Bind(&longjmp);
+  __ lx(RA, Address(A0, 0 * kWordSize));
+  __ lx(SP, Address(A0, 1 * kWordSize));
+  __ lx(FP, Address(A0, 2 * kWordSize));
+  __ lx(A1, Address(A0, 3 * kWordSize));
+  __ beqz(A1, &ss_disabled);
+  __ csrw(0x011, A1);
+  __ Bind(&ss_disabled);
+  __ li(A0, 1);
+  __ ret();
+
+  void* buffer = assembler.buffer();
+  simulator.set_ss_enabled(true);
+  EXPECT_EQ(1, simulator.Call(buffer));
+  simulator.set_ss_enabled(false);
+  EXPECT_EQ(1, simulator.Call(buffer));
+}
 
 ASM_TEST(PendingB, RV_G) {
   Label label;

@@ -1876,6 +1876,51 @@ void Assembler::fleqd(Register rd, FRegister rs1, FRegister rs2) {
   EmitRType(FCMPD, rs2, rs1, FLEQ, rd, OPFP);
 }
 
+void Assembler::sspush(Register rs2) {
+  ASSERT((rs2 == Register(1)) || (rs2 == Register(5)));
+  ASSERT(Supports(RV_Zicfiss));
+  if (Supports(RV_C) && (rs2 == Register(1))) {
+    Emit16(C_SSPUSH);
+  } else {
+    EmitRType(SSPUSH, rs2, ZERO, F3_100, ZERO, SYSTEM);
+  }
+}
+
+void Assembler::sspopchk(Register rs1) {
+  ASSERT((rs1 == Register(1)) || (rs1 == Register(5)));
+  ASSERT(Supports(RV_Zicfiss));
+  if (Supports(RV_C) && (rs1 == Register(5))) {
+    Emit16(C_SSPOPCHK);
+  } else {
+    EmitIType(SSPOPCHK, rs1, F3_100, ZERO, SYSTEM);
+  }
+}
+
+void Assembler::ssrdp(Register rd) {
+  ASSERT(Supports(RV_Zicfiss));
+  EmitIType(SSRDP, ZERO, F3_100, rd, SYSTEM);
+}
+
+void Assembler::ssamoswapw(Register rd,
+                           Register rs2,
+                           Address addr,
+                           std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT(Supports(RV_Zicfiss));
+  EmitRType(SSAMOSWAP, order, rs2, addr.base(), WIDTH32, rd, AMO);
+}
+
+#if XLEN >= 64
+void Assembler::ssamoswapd(Register rd,
+                           Register rs2,
+                           Address addr,
+                           std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT(Supports(RV_Zicfiss));
+  EmitRType(SSAMOSWAP, order, rs2, addr.base(), WIDTH64, rd, AMO);
+}
+#endif  // XLEN >= 64
+
 void Assembler::lb(Register rd, Address addr, std::memory_order order) {
   ASSERT(addr.offset() == 0);
   ASSERT((order == std::memory_order_acquire) ||
@@ -2094,6 +2139,7 @@ void Assembler::c_lui(Register rd, uintptr_t imm) {
   ASSERT(Supports(RV_C));
   ASSERT(rd != ZERO);
   ASSERT(rd != SP);
+  ASSERT(imm != 0);
   Emit16(C_LUI | EncodeCRd(rd) | EncodeCUImm(imm));
 }
 
@@ -2521,6 +2567,20 @@ void Assembler::EmitR4Type(FRegister rs3,
   e |= EncodeFRs1(rs1);
   e |= EncodeRoundingMode(round);
   e |= EncodeFRd(rd);
+  e |= EncodeOpcode(opcode);
+  Emit32(e);
+}
+
+void Assembler::EmitIType(Funct12 funct12,
+                          Register rs1,
+                          Funct3 funct3,
+                          Register rd,
+                          Opcode opcode) {
+  uint32_t e = 0;
+  e |= EncodeFunct12(funct12);
+  e |= EncodeRs1(rs1);
+  e |= EncodeFunct3(funct3);
+  e |= EncodeRd(rd);
   e |= EncodeOpcode(opcode);
   Emit32(e);
 }

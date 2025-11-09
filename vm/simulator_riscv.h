@@ -224,12 +224,15 @@ class Simulator {
     return get_fregs(FA0);
   }
 
+  void set_ss_enabled(bool value) { ss_enabled_ = value; }
+
   void PrintRegisters();
 
  private:
   struct PreservedRegisters {
     uintx_t xregs[kNumRegisters];
     double fregs[kNumFRegisters];
+    uintx_t ssp;
   };
   void PrepareCall(PreservedRegisters* preserved);
   void RunCall(void* function, PreservedRegisters* preserved);
@@ -351,6 +354,7 @@ class Simulator {
 
   void* stack_;
   uintx_t stack_base_;
+  void* shadow_stack_;
   Random random_;
   bool trace_;
 
@@ -366,6 +370,10 @@ class Simulator {
   // F/D state
   double fregs_[kNumFRegisters];
   uint32_t fcsr_;
+
+  // Zicfissp state
+  bool ss_enabled_ = false;
+  uintx_t ssp_ = 0;
 };
 #else
 class Simulator {
@@ -436,6 +444,8 @@ class Simulator {
     typedef float (*Function)(double);
     return reinterpret_cast<Function>(function)(arg0);
   }
+
+  void set_ss_enabled(bool value) {}
 };
 #endif
 
