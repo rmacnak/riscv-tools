@@ -135,6 +135,9 @@ void Disassembler::DisassembleInstruction(Instruction instr) {
     case OPFP:
       DisassembleOPFP(instr);
       break;
+    case OPV:
+      DisassembleOPV(instr);
+      break;
     default:
       if ((instr.encoding() == 0) ||
           (instr.encoding() == static_cast<uint32_t>(-1))) {
@@ -518,11 +521,29 @@ void Disassembler::DisassembleLOAD(Instruction instr) {
 
 void Disassembler::DisassembleLOADFP(Instruction instr) {
   switch (instr.funct3()) {
+    case H:
+      Print("flh 'frd, 'iimm('rs1)", instr, RV_Zfhmin);
+      break;
     case S:
       Print("flw 'frd, 'iimm('rs1)", instr, RV_F);
       break;
     case D:
       Print("fld 'frd, 'iimm('rs1)", instr, RV_D);
+      break;
+    case Q:
+      Print("flq 'frd, 'iimm('rs1)", instr, RV_Q);
+      break;
+    case E8:
+      Print("vle8.v 'vd, ('rs1)'vm", instr, RV_V);
+      break;
+    case E16:
+      Print("vle16.v 'vd, ('rs1)'vm", instr, RV_V);
+      break;
+    case E32:
+      Print("vle32.v 'vd, ('rs1)'vm", instr, RV_V);
+      break;
+    case E64:
+      Print("vle64.v 'vd, ('rs1)'vm", instr, RV_V);
       break;
     default:
       UnknownInstruction(instr);
@@ -552,11 +573,29 @@ void Disassembler::DisassembleSTORE(Instruction instr) {
 
 void Disassembler::DisassembleSTOREFP(Instruction instr) {
   switch (instr.funct3()) {
+    case H:
+      Print("fsh 'frs2, 'simm('rs1)", instr, RV_Zfhmin);
+      break;
     case S:
       Print("fsw 'frs2, 'simm('rs1)", instr, RV_F);
       break;
     case D:
       Print("fsd 'frs2, 'simm('rs1)", instr, RV_D);
+      break;
+    case Q:
+      Print("fsq 'frs2, 'simm('rs1)", instr, RV_Q);
+      break;
+    case E8:
+      Print("vse8.v 'vs3, ('rs1)'vm", instr, RV_V);
+      break;
+    case E16:
+      Print("vse16.v 'vs3, ('rs1)'vm", instr, RV_V);
+      break;
+    case E32:
+      Print("vse32.v 'vs3, ('rs1)'vm", instr, RV_V);
+      break;
+    case E64:
+      Print("vse64.v 'vs3, ('rs1)'vm", instr, RV_V);
       break;
     default:
       UnknownInstruction(instr);
@@ -1751,6 +1790,40 @@ void Disassembler::DisassembleOPFP(Instruction instr) {
   }
 }
 
+void Disassembler::DisassembleOPV(Instruction instr) {
+  switch (instr.funct3()) {
+    case OPCFG:
+      DisassembleOPV_CFG(instr);
+      break;
+    case OPIVX:
+      DisassembleOPV_IVX(instr);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOPV_CFG(Instruction instr) {
+  if ((instr.encoding() & 0x80000000) == 0) {
+    Print("vsetvli 'rd, 'rs1, 'vtypei", instr, RV_V);
+  } else {
+    // vsetivli
+    // vsetvl
+    UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleOPV_IVX(Instruction instr) {
+  switch (instr.funct6()) {
+    case VMV:
+      Print("vmv.v.x 'vd, 'rs1'vm", instr, RV_V);
+      break;
+    default:
+      UnknownInstruction(instr);
+      break;
+  }
+}
+
 void Disassembler::UnknownInstruction(Instruction instr) {
   if (instr.encoding() == 0) {
     Print("trap", instr, RV_I);
@@ -1950,6 +2023,63 @@ const char* Disassembler::PrintOption(const char* format, Instruction instr) {
         break;
     }
     return format + 4;
+  } else if (STRING_STARTS_WITH(format, "vd")) {
+    buffer_.Print("%s", kVRegisterNames[instr.vd().encoding()]);
+    return format + 2;
+  } else if (STRING_STARTS_WITH(format, "vs1")) {
+    buffer_.Print("%s", kVRegisterNames[instr.vs1().encoding()]);
+    return format + 3;
+  } else if (STRING_STARTS_WITH(format, "vs2")) {
+    buffer_.Print("%s", kVRegisterNames[instr.vs2().encoding()]);
+    return format + 3;
+  } else if (STRING_STARTS_WITH(format, "vs3")) {
+    buffer_.Print("%s", kVRegisterNames[instr.vs3().encoding()]);
+    return format + 3;
+  } else if (STRING_STARTS_WITH(format, "vtypei")) {
+    intx_t vtypei = instr.itype_imm();
+
+    // SEW
+    switch ((vtypei >> 3) & 0b111) {
+      case e8: buffer_.Print("e8"); break;
+      case e16: buffer_.Print("e16"); break;
+      case e32: buffer_.Print("e32"); break;
+      case e64: buffer_.Print("e64"); break;
+      default:  buffer_.Print("invalid sew"); break;
+    }
+
+    // LMUL
+    switch ((vtypei >> 0) & 0b111) {
+      case mf8: buffer_.Print(", mf8"); break;
+      case mf4: buffer_.Print(", mf4"); break;
+      case mf2: buffer_.Print(", mf2"); break;
+      case m1: buffer_.Print(", m1"); break;
+      case m2: buffer_.Print(", m2"); break;
+      case m4: buffer_.Print(", m4"); break;
+      case m8: buffer_.Print(", m8"); break;
+      default: buffer_.Print(", invalid lmul"); break;
+    }
+
+    // VTA
+    if ((vtypei & (1 << 6)) == 0) {
+      buffer_.Print(", tu");
+    } else {
+      buffer_.Print(", ta");
+    }
+
+    // VMA
+    if ((vtypei & (1 << 7)) == 0) {
+      buffer_.Print(", mu");
+    } else {
+      buffer_.Print(", ma");
+    }
+
+    return format + 6;
+  } else if (STRING_STARTS_WITH(format, "vm")) {
+    if (instr.vm()) {
+      buffer_.Print(", v0.t");
+    }
+
+    return format + 2;
   }
 
   FATAL("Bad format %s\n", format);

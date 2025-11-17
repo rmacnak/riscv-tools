@@ -92,6 +92,16 @@ class Redirection {
 //  - csr not implemented
 //  - fcsr not implemented -> dynamic rounding not implemented
 #if defined(USING_SIMULATOR)
+
+#define ELEN 64
+#define VLEN 128
+
+static_assert(ELEN >= 8);
+static_assert(Utils::IsPowerOfTwo(ELEN));
+static_assert(VLEN >= ELEN);
+static_assert(Utils::IsPowerOfTwo(VLEN));
+static_assert(VLEN <= 0x10000);
+
 class Simulator {
  public:
   Simulator();
@@ -299,12 +309,27 @@ class Simulator {
   template <typename type>
   void InterpretSTOREORDERED(Instruction instr);
   void InterpretLOADFP(Instruction instr);
+  template <typename type>
+  void InterpretLOADV(Instruction instr);
   void InterpretSTOREFP(Instruction instr);
+  template <typename type>
+  void InterpretSTOREV(Instruction instr);
   void InterpretFMADD(Instruction instr);
   void InterpretFMSUB(Instruction instr);
   void InterpretFNMADD(Instruction instr);
   void InterpretFNMSUB(Instruction instr);
   void InterpretOPFP(Instruction instr);
+  void InterpretOPV(Instruction instr);
+  void InterpretOPV_IVV(Instruction instr);
+  void InterpretOPV_FVV(Instruction instr);
+  void InterpretOPV_MVV(Instruction instr);
+  void InterpretOPV_IVI(Instruction instr);
+  void InterpretOPV_IVX(Instruction instr);
+  template <typename sew_t>
+  void InterpretOPV_IVX(Instruction instr);
+  void InterpretOPV_FVF(Instruction instr);
+  void InterpretOPV_MVX(Instruction instr);
+  void InterpretOPV_CFG(Instruction instr);
   void IllegalInstruction(Instruction instr);
   void IllegalInstruction(CInstruction instr);
 
@@ -352,6 +377,17 @@ class Simulator {
     fregs_[rd.encoding()] = bit_cast<double>(bits64);
   }
 
+  template <typename T>
+  T* ref_vreg(VRegister vd) {
+    return reinterpret_cast<T*>(&vregs_[vd.encoding()][0]);
+  }
+  LengthMultiplier vlmul() const {
+    return static_cast<LengthMultiplier>((vtype_ >> 0) & 7);
+  }
+  ElementWidth vsew() const {
+    return static_cast<ElementWidth>((vtype_ >> 3) & 7);
+  }
+
   void* stack_;
   uintx_t stack_base_;
   void* shadow_stack_;
@@ -369,11 +405,16 @@ class Simulator {
 
   // F/D state
   double fregs_[kNumFRegisters];
-  uint32_t fcsr_;
+  uintx_t fcsr_;
 
   // Zicfissp state
   bool ss_enabled_ = false;
   uintx_t ssp_ = 0;
+
+  // V state
+  uint8_t vregs_[kNumVRegisters][VLEN/8];
+  uintx_t vl_;
+  uintx_t vtype_;
 };
 #else
 class Simulator {

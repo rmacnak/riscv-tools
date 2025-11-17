@@ -243,6 +243,54 @@ static constexpr FRegisterSet kAllFRegisters = FRegisterSet(0xFFFFFFFF);
 COMPILE_ASSERT((kVolatileFRegisters | kPreservedFRegisters) == kAllFRegisters);
 COMPILE_ASSERT((kVolatileFRegisters & kPreservedFRegisters).IsEmpty());
 
+DEFINE_TYPED_ENUM_SET(VRegister, uint32_t)
+static constexpr VRegister V0(0);
+static constexpr VRegister V1(1);
+static constexpr VRegister V2(2);
+static constexpr VRegister V3(3);
+static constexpr VRegister V4(4);
+static constexpr VRegister V5(5);
+static constexpr VRegister V6(6);
+static constexpr VRegister V7(7);
+static constexpr VRegister V8(8);
+static constexpr VRegister V9(9);
+static constexpr VRegister V10(10);
+static constexpr VRegister V11(11);
+static constexpr VRegister V12(12);
+static constexpr VRegister V13(13);
+static constexpr VRegister V14(14);
+static constexpr VRegister V15(15);
+static constexpr VRegister V16(16);
+static constexpr VRegister V17(17);
+static constexpr VRegister V18(18);
+static constexpr VRegister V19(19);
+static constexpr VRegister V20(20);
+static constexpr VRegister V21(21);
+static constexpr VRegister V22(22);
+static constexpr VRegister V23(23);
+static constexpr VRegister V24(24);
+static constexpr VRegister V25(25);
+static constexpr VRegister V26(26);
+static constexpr VRegister V27(27);
+static constexpr VRegister V28(28);
+static constexpr VRegister V29(29);
+static constexpr VRegister V30(30);
+static constexpr VRegister V31(31);
+
+static const intptr_t kNumVRegisters = 32;
+static const char* const kVRegisterNames[kNumFRegisters] = {
+    "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11",
+    "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22",
+    "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31",
+};
+
+static constexpr VRegisterSet kVolatileVRegisters = VRegisterSet(0xFFFFFFFF);
+static constexpr VRegisterSet kPreservedVRegisters = VRegisterSet(0);
+static constexpr VRegisterSet kAllVRegisters = VRegisterSet(0xFFFFFFFF);
+
+COMPILE_ASSERT((kVolatileVRegisters | kPreservedVRegisters) == kAllVRegisters);
+COMPILE_ASSERT((kVolatileVRegisters & kPreservedVRegisters).IsEmpty());
+
 enum Opcode {
   LUI = 0b0110111,
   AUIPC = 0b0010111,
@@ -265,6 +313,7 @@ enum Opcode {
   FNMSUB = 0b1001011,
   FNMADD = 0b1001111,
   OPFP = 0b1010011,
+  OPV = 0b1010111,
 };
 
 enum Funct12 {
@@ -349,8 +398,15 @@ enum Funct3 {
   WIDTH32 = 0b010,
   WIDTH64 = 0b011,
 
+  H = 0b001,
   S = 0b010,
   D = 0b011,
+  Q = 0b100,
+  E8  = 0b000,
+  E16 = 0b101,
+  E32 = 0b110,
+  E64 = 0b111,
+
   J = 0b000,
   JN = 0b001,
   JX = 0b010,
@@ -391,6 +447,15 @@ enum Funct3 {
 
   CZEROEQZ = 0b101,
   CZERONEZ = 0b111,
+
+  OPIVV = 0b000,
+  OPFVV = 0b001,
+  OPMVV = 0b010,
+  OPIVI = 0b011,
+  OPIVX = 0b100,
+  OPFVF = 0b101,
+  OPMVX = 0b110,
+  OPCFG = 0b111,
 };
 
 enum Funct7 {
@@ -444,6 +509,21 @@ enum Funct7 {
   CZERO = 0b0000111,
 
   SSPUSH = 0b1100111,
+};
+
+enum Funct6 {
+  VADD = 0b000000,
+  VSUB = 0b000010,
+  VRSUB = 0b000011,
+  VMINU = 0b000100,
+  VMIN = 0b000101,
+  VMAXU = 0b000110,
+  VMAX = 0b000111,
+  VAND = 0b001001,
+  VOR = 0b001010,
+  VXOR = 0b001011,
+
+  VMV = 0b010111,
 };
 
 enum Funct5 {
@@ -510,74 +590,113 @@ enum HartEffects {
 const intptr_t kReleaseShift = 25;
 const intptr_t kAcquireShift = 26;
 
+enum ElementWidth {
+  e8 = 0b000,
+  e16 = 0b001,
+  e32 = 0b010,
+  e64 = 0b011,
+
+  reservedsew1 = 0b100,
+  reservedsew2 = 0b101,
+  reservedsew3 = 0b110,
+  reservedsew4 = 0b111,
+};
+
+enum LengthMultiplier {
+  mf8 = 0b101,
+  mf4 = 0b110,
+  mf2 = 0b111,
+  m1 = 0b000,
+  m2 = 0b001,
+  m4 = 0b010,
+  m8 = 0b011,
+
+  reservedlmul1 = 0b100,
+};
+
+enum MaskMode {
+  mu = 0,  // Mask undisturbed
+  ma = 1,  // Mask agnostic
+};
+
+enum TailMode {
+  tu = 0,  // Tail undisturbed
+  ta = 1,  // Mask agnosticagnostic
+};
+
+enum VectorMask {
+  v0t = 0,
+  unmasked = 1 << 25,
+};
+
 constexpr uint32_t kFlisConstants[32] = {
-  0xbf800000, // -1.0
-  0x00800000, // min positive normal
-  0x37800000, // 2^-16
-  0x38000000, // 2^-15
-  0x3b800000, // 2^-8
-  0x3c000000, // 2^-7
-  0x3d800000, // 0.0625
-  0x3e000000, // 0.125
-  0x3e800000, // 0.25
-  0x3ea00000, // 0.3125
-  0x3ec00000, // 0.375
-  0x3ee00000, // 0.4375
-  0x3f000000, // 0.5
-  0x3f200000, // 0.625
-  0x3f400000, // 0.75
-  0x3f600000, // 0.875
-  0x3f800000, // 1.0
-  0x3fa00000, // 1.25
-  0x3fc00000, // 1.5
-  0x3fe00000, // 1.75
-  0x40000000, // 2.0
-  0x40200000, // 2.5
-  0x40400000, // 3
-  0x40800000, // 4
-  0x41000000, // 8
-  0x41800000, // 16
-  0x43000000, // 2^7
-  0x43800000, // 2^8
-  0x47000000, // 2^15
-  0x47800000, // 2^16
-  0x7f800000, // positive infinity
-  0x7fc00000, // canonical NaN
+  0xbf800000,  // -1.0
+  0x00800000,  // min positive normal
+  0x37800000,  // 2^-16
+  0x38000000,  // 2^-15
+  0x3b800000,  // 2^-8
+  0x3c000000,  // 2^-7
+  0x3d800000,  // 0.0625
+  0x3e000000,  // 0.125
+  0x3e800000,  // 0.25
+  0x3ea00000,  // 0.3125
+  0x3ec00000,  // 0.375
+  0x3ee00000,  // 0.4375
+  0x3f000000,  // 0.5
+  0x3f200000,  // 0.625
+  0x3f400000,  // 0.75
+  0x3f600000,  // 0.875
+  0x3f800000,  // 1.0
+  0x3fa00000,  // 1.25
+  0x3fc00000,  // 1.5
+  0x3fe00000,  // 1.75
+  0x40000000,  // 2.0
+  0x40200000,  // 2.5
+  0x40400000,  // 3
+  0x40800000,  // 4
+  0x41000000,  // 8
+  0x41800000,  // 16
+  0x43000000,  // 2^7
+  0x43800000,  // 2^8
+  0x47000000,  // 2^15
+  0x47800000,  // 2^16
+  0x7f800000,  // positive infinity
+  0x7fc00000,  // canonical NaN
 };
 
 const uint64_t kFlidConstants[32] = {
-  0xbff0000000000000, // -1.0
-  0x0010000000000000, // min positive normal
-  0x3ef0000000000000, // 2^-16
-  0x3f00000000000000, // 2^-15
-  0x3f70000000000000, // 2^-8
-  0x3f80000000000000, // 2^7
-  0x3fb0000000000000, // 0.0625
-  0x3fc0000000000000, // 0.125
-  0x3fd0000000000000, // 0.25
-  0x3fd4000000000000, // 0.3125
-  0x3fd8000000000000, // 0.375
-  0x3fdc000000000000, // 0.4375
-  0x3fe0000000000000, // 0.5
-  0x3fe4000000000000, // 0.625
-  0x3fe8000000000000, // 0.75
-  0x3fec000000000000, // 0.875
-  0x3ff0000000000000, // 1.0
-  0x3ff4000000000000, // 1.25
-  0x3ff8000000000000, // 1.5
-  0x3ffc000000000000, // 1.75
-  0x4000000000000000, // 2.0
-  0x4004000000000000, // 2.5
-  0x4008000000000000, // 3
-  0x4010000000000000, // 4
-  0x4020000000000000, // 8
-  0x4030000000000000, // 16
-  0x4060000000000000, // 2^7
-  0x4070000000000000, // 2^8
-  0x40e0000000000000, // 2^15
-  0x40f0000000000000, // 2^16
-  0x7ff0000000000000, // positive infinity
-  0x7ff8000000000000, // canonical NaN
+  0xbff0000000000000,  // -1.0
+  0x0010000000000000,  // min positive normal
+  0x3ef0000000000000,  // 2^-16
+  0x3f00000000000000,  // 2^-15
+  0x3f70000000000000,  // 2^-8
+  0x3f80000000000000,  // 2^7
+  0x3fb0000000000000,  // 0.0625
+  0x3fc0000000000000,  // 0.125
+  0x3fd0000000000000,  // 0.25
+  0x3fd4000000000000,  // 0.3125
+  0x3fd8000000000000,  // 0.375
+  0x3fdc000000000000,  // 0.4375
+  0x3fe0000000000000,  // 0.5
+  0x3fe4000000000000,  // 0.625
+  0x3fe8000000000000,  // 0.75
+  0x3fec000000000000,  // 0.875
+  0x3ff0000000000000,  // 1.0
+  0x3ff4000000000000,  // 1.25
+  0x3ff8000000000000,  // 1.5
+  0x3ffc000000000000,  // 1.75
+  0x4000000000000000,  // 2.0
+  0x4004000000000000,  // 2.5
+  0x4008000000000000,  // 3
+  0x4010000000000000,  // 4
+  0x4020000000000000,  // 8
+  0x4030000000000000,  // 16
+  0x4060000000000000,  // 2^7
+  0x4070000000000000,  // 2^8
+  0x40e0000000000000,  // 2^15
+  0x40f0000000000000,  // 2^16
+  0x7ff0000000000000,  // positive infinity
+  0x7ff8000000000000,  // canonical NaN
 };
 
 #define DEFINE_REG_ENCODING(type, name, shift)                                 \
@@ -597,6 +716,10 @@ DEFINE_REG_ENCODING(FRegister, FRd, 7)
 DEFINE_REG_ENCODING(FRegister, FRs1, 15)
 DEFINE_REG_ENCODING(FRegister, FRs2, 20)
 DEFINE_REG_ENCODING(FRegister, FRs3, 27)
+DEFINE_REG_ENCODING(VRegister, Vd, 7)
+DEFINE_REG_ENCODING(VRegister, Vs1, 15)
+DEFINE_REG_ENCODING(VRegister, Vs2, 20)
+DEFINE_REG_ENCODING(VRegister, Vs3, 7)
 #undef DEFINE_REG_ENCODING
 
 #define DEFINE_FUNCT_ENCODING(type, name, shift, mask)                         \
@@ -613,6 +736,7 @@ DEFINE_FUNCT_ENCODING(Opcode, Opcode, 0, 0x7F)
 DEFINE_FUNCT_ENCODING(Funct2, Funct2, 25, 0x3)
 DEFINE_FUNCT_ENCODING(Funct3, Funct3, 12, 0x7)
 DEFINE_FUNCT_ENCODING(Funct5, Funct5, 27, 0x1F)
+DEFINE_FUNCT_ENCODING(Funct6, Funct6, 26, 0x3F)
 DEFINE_FUNCT_ENCODING(Funct7, Funct7, 25, 0x7F)
 DEFINE_FUNCT_ENCODING(Funct12, Funct12, 20, 0xFFF)
 #if XLEN == 32
@@ -726,9 +850,16 @@ class Instruction {
   FRegister frs2() const { return DecodeFRs2(encoding_); }
   FRegister frs3() const { return DecodeFRs3(encoding_); }
 
+  VRegister vd() const { return DecodeVd(encoding_); }
+  VRegister vs1() const { return DecodeVs1(encoding_); }
+  VRegister vs2() const { return DecodeVs2(encoding_); }
+  VRegister vs3() const { return DecodeVs3(encoding_); }
+  bool vm() const { return (encoding_ & 1 << 25) == 0; }
+
   Funct2 funct2() const { return DecodeFunct2(encoding_); }
   Funct3 funct3() const { return DecodeFunct3(encoding_); }
   Funct5 funct5() const { return DecodeFunct5(encoding_); }
+  Funct6 funct6() const { return DecodeFunct6(encoding_); }
   Funct7 funct7() const { return DecodeFunct7(encoding_); }
   Funct12 funct12() const { return DecodeFunct12(encoding_); }
 
@@ -1203,21 +1334,28 @@ static constexpr Extension RV_M(1);  // Multiply/divide
 static constexpr Extension RV_A(2);  // Atomic
 static constexpr Extension RV_F(3);  // Single-precision floating point
 static constexpr Extension RV_D(4);  // Double-precision floating point
-static constexpr Extension RV_C(5);  // Compressed instructions
+static constexpr Extension RV_Q(5);  // Quad-precision floating point
+static constexpr Extension RV_C(6);  // Compressed instructions
 static constexpr ExtensionSet RV_G = RV_I | RV_M | RV_A | RV_F | RV_D;
 static constexpr ExtensionSet RV_GC = RV_G | RV_C;
-static constexpr Extension RV_Zba(6);  // Address generation
-static constexpr Extension RV_Zbb(7);  // Basic bit-manipulation
-static constexpr Extension RV_Zbs(8);  // Single-bit instructions
+static constexpr ExtensionSet RVA20 = RV_GC;
+static constexpr Extension RV_Zba(8);  // Address generation
+static constexpr Extension RV_Zbb(9);  // Basic bit-manipulation
+static constexpr Extension RV_Zbs(10);  // Single-bit instructions
 static constexpr ExtensionSet RV_B = RV_Zba | RV_Zbb | RV_Zbs;
 static constexpr ExtensionSet RV_GCB = RV_GC | RV_B;
-static constexpr Extension RV_Zbc(9);  // Carry-less multiplication
-static constexpr Extension RV_Zicond(10);  // Integer conditional operations
-static constexpr Extension RV_Zcb(11);  // More compressed instructions
-static constexpr Extension RV_Zabha(12);  // Byte and halfword AMOs
-static constexpr Extension RV_Zfa(13);  // Load-acquire, store-release
-static constexpr Extension RV_Zicfiss(14);  // Shadow stack
-static constexpr Extension RV_Zalasr(15);  // Load-acquire, store-release
+static constexpr ExtensionSet RVA22 = RV_GCB;
+static constexpr Extension RV_V(11);  // Vector
+static constexpr Extension RV_Zbc(12);  // Carry-less multiplication
+static constexpr Extension RV_Zicond(13);  // Integer conditional operations
+static constexpr Extension RV_Zcb(14);  // More compressed instructions
+static constexpr Extension RV_Zfa(15);  // Load-acquire, store-release
+static constexpr ExtensionSet RVA23 =
+    RV_GCB | RV_V | RV_Zicond | RV_Zcb | RV_Zfa;
+static constexpr Extension RV_Zabha(16);  // Byte and halfword AMOs
+static constexpr Extension RV_Zicfiss(17);  // Shadow stack
+static constexpr Extension RV_Zalasr(18);  // Load-acquire store-release
+static constexpr Extension RV_Zfhmin(19);  // Half-precision float
 
 }  // namespace psoup
 

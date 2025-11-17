@@ -71,6 +71,11 @@ Simulator::Simulator()
   for (intptr_t i = 0; i < kNumFRegisters; i++) {
     fregs_[i] = bit_cast<double>(random_.NextUInt64());
   }
+  for (intptr_t i = 0; i < kNumVRegisters; i++) {
+    for (intptr_t j = 0; j < VLEN/8; j++) {
+      vregs_[i][j] = random_.NextUInt64();
+    }
+  }
 
   stack_ = Memory::Allocate(kStackSize);
   stack_base_ = Memory::ToGuest(stack_) + kStackSize;
@@ -155,18 +160,64 @@ void Simulator::PrintRegisters() {
   ASSERT(kNumRegisters == kNumFRegisters);
   for (intptr_t i = 0; i < kNumRegisters; i++) {
 #if XLEN == 32
-    OS::Print("%4s: %8x %11d", kRegisterNames[i], xregs_[i], xregs_[i]);
+    OS::Print("%5s: %8x %11d", kRegisterNames[i], xregs_[i], xregs_[i]);
 #elif XLEN == 64
-    OS::Print("%4s: %16" Px64 " %20" Pd64, kRegisterNames[i], xregs_[i],
+    OS::Print("%5s: %16" Px64 " %20" Pd64, kRegisterNames[i], xregs_[i],
               xregs_[i]);
 #endif
-    OS::Print("  %4s: %lf\n", kFRegisterNames[i], fregs_[i]);
+    OS::Print("  %5s: %lf\n", kFRegisterNames[i], fregs_[i]);
   }
 #if XLEN == 32
-  OS::Print("  pc: %8x\n", pc_);
+  OS::Print("   pc: %8x\n", pc_);
 #elif XLEN == 64
-  OS::Print("  pc: %16" Px64 "\n", pc_);
+  OS::Print("   pc: %16" Px64 "\n", pc_);
 #endif
+
+  for (intptr_t i = 0; i < kNumVRegisters; i++) {
+    OS::Print("%5s: ", kVRegisterNames[i]);
+    for (intptr_t j = VLEN/8 - 1; j >= 0; j--) {
+      OS::PrintErr("%02x", (unsigned)vregs_[i][j]);
+    }
+    OS::Print("\n");
+  }
+#if XLEN == 32
+  OS::Print("   vl: %8x %11d\n", vl_, vl_);
+#elif XLEN == 64
+  OS::Print("   vl: %16" Px64 " %20" Pd64 "\n", vl_, vl_);
+#endif
+
+#if XLEN == 32
+  OS::Print("vtype: %8x ", vtype_);
+#elif XLEN == 64
+  OS::Print("vtype: %16" Px64 "       ", vtype_);
+#endif
+  switch ((vtype_ >> 3) & 0b111) {
+    case 0b000: OS::Print("e8"); break;
+    case 0b001: OS::Print("e16"); break;
+    case 0b010: OS::Print("e32"); break;
+    case 0b011: OS::Print("e64"); break;
+       default: OS::Print("invalid sew"); break;
+  }
+  switch ((vtype_ >> 0) & 0b111) {
+    case 0b101: OS::Print(", mf8"); break;
+    case 0b110: OS::Print(", mf4"); break;
+    case 0b111: OS::Print(", mf2"); break;
+    case 0b000: OS::Print(", m1"); break;
+    case 0b001: OS::Print(", m2"); break;
+    case 0b010: OS::Print(", m4"); break;
+    case 0b011: OS::Print(", m8"); break;
+       default: OS::Print(", invalid lmul"); break;
+  }
+  if ((vtype_ & (1 << 6)) == 0) {
+    OS::Print(", tu");
+  } else {
+    OS::Print(", ta");
+  }
+  if ((vtype_ & (1 << 7)) == 0) {
+    OS::Print(", mu\n");
+  } else {
+    OS::Print(", ma\n");
+  }
 }
 
 void Simulator::Interpret(Instruction instr) {
@@ -233,6 +284,9 @@ void Simulator::Interpret(Instruction instr) {
       break;
     case OPFP:
       InterpretOPFP(instr);
+      break;
+    case OPV:
+      InterpretOPV(instr);
       break;
     default:
       IllegalInstruction(instr);
@@ -434,17 +488,25 @@ static uintx_t cpopw(uint32_t a) {
   return count;
 }
 
-static intx_t max(intx_t a, intx_t b) {
-  return a > b ? a : b;
+template <typename T>
+static T min(T a, T b) {
+  using S = typename std::make_signed<T>::type;
+  return static_cast<S>(a) < static_cast<S>(b) ? a : b;
 }
-static uintx_t maxu(uintx_t a, uintx_t b) {
-  return a > b ? a : b;
+template <typename T>
+static T max(T a, T b) {
+  using S = typename std::make_signed<T>::type;
+  return static_cast<S>(a) > static_cast<S>(b) ? a : b;
 }
-static intx_t min(intx_t a, intx_t b) {
-  return a < b ? a : b;
+template <typename T>
+static T minu(T a, T b) {
+  using U = typename std::make_unsigned<T>::type;
+  return static_cast<U>(a) < static_cast<U>(b) ? a : b;
 }
-static uintx_t minu(uintx_t a, uintx_t b) {
-  return a < b ? a : b;
+template <typename T>
+static T maxu(T a, T b) {
+  using U = typename std::make_unsigned<T>::type;
+  return static_cast<U>(a) > static_cast<U>(b) ? a : b;
 }
 static uintx_t clmul(uintx_t a, uintx_t b) {
   uintx_t result = 0;
@@ -990,10 +1052,34 @@ void Simulator::InterpretLOADFP(Instruction instr) {
     case D:
       set_fregd(instr.frd(), MemoryRead<double>(addr, instr.rs1()));
       break;
+    case E8:
+      InterpretLOADV<uint8_t>(instr);
+      break;
+    case E16:
+      InterpretLOADV<uint16_t>(instr);
+      break;
+    case E32:
+      InterpretLOADV<uint32_t>(instr);
+      break;
+    case E64:
+      InterpretLOADV<uint64_t>(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
   pc_ += instr.length();
+}
+
+template <typename T>
+void Simulator::InterpretLOADV(Instruction instr) {
+  if ((instr.encoding() & 0xFFF00000) != 0x02000000) {
+    UNIMPLEMENTED();  // Only unmasked unit-stride implemented.
+  }
+  uintx_t base = get_xreg(instr.rs1());
+  T* vd = ref_vreg<T>(instr.vd());
+  for (uintx_t i = 0; i < vl_; i++) {
+    vd[i] = MemoryRead<T>(base + i * sizeof(T), instr.rs1());
+  }
 }
 
 void Simulator::InterpretSTORE(Instruction instr) {
@@ -1028,10 +1114,34 @@ void Simulator::InterpretSTOREFP(Instruction instr) {
     case D:
       MemoryWrite<double>(addr, get_fregd(instr.frs2()), instr.rs1());
       break;
+    case E8:
+      InterpretSTOREV<uint8_t>(instr);
+      break;
+    case E16:
+      InterpretSTOREV<uint16_t>(instr);
+      break;
+    case E32:
+      InterpretSTOREV<uint32_t>(instr);
+      break;
+    case E64:
+      InterpretSTOREV<uint64_t>(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
   pc_ += instr.length();
+}
+
+template <typename T>
+void Simulator::InterpretSTOREV(Instruction instr) {
+  if ((instr.encoding() & 0xFFF00000) != 0x02000000) {
+    UNIMPLEMENTED();  // Only unmasked unit-stride implemented.
+  }
+  uintx_t base = get_xreg(instr.rs1());
+  T* vs3 = ref_vreg<T>(instr.vs3());
+  for (uintx_t i = 0; i < vl_; i++) {
+    MemoryWrite<T>(base + i * sizeof(T), vs3[i], instr.rs1());
+  }
 }
 
 void Simulator::InterpretOPIMM(Instruction instr) {
@@ -1706,6 +1816,13 @@ void Simulator::InterpretECALL(Instruction instr) {
   for (intptr_t i = 0; i < kNumFRegisters; i++) {
     if (kVolatileFRegisters.Includes(FRegister(i))) {
       fregs_[i] = bit_cast<double>(random_.NextUInt64());
+    }
+  }
+  for (intptr_t i = 0; i < kNumVRegisters; i++) {
+    if (kVolatileVRegisters.Includes(VRegister(i))) {
+      for (intptr_t j = 0; j < VLEN/8; j++) {
+        vregs_[i][j] = random_.NextUInt64();
+      }
     }
   }
 #endif
@@ -2870,16 +2987,167 @@ void Simulator::InterpretOPFP(Instruction instr) {
   pc_ += instr.length();
 }
 
+void Simulator::InterpretOPV(Instruction instr) {
+  switch (instr.funct3()) {
+    case OPIVV:
+      InterpretOPV_IVV(instr);
+      break;
+    case OPFVV:
+      InterpretOPV_FVV(instr);
+      break;
+    case OPMVV:
+      InterpretOPV_MVV(instr);
+      break;
+    case OPIVI:
+      InterpretOPV_IVI(instr);
+      break;
+    case OPIVX:
+      InterpretOPV_IVX(instr);
+      break;
+    case OPFVF:
+      InterpretOPV_FVF(instr);
+      break;
+    case OPMVX:
+      InterpretOPV_MVX(instr);
+      break;
+    case OPCFG:
+      InterpretOPV_CFG(instr);
+      break;
+    default:
+      IllegalInstruction(instr);
+  }
+  pc_ += instr.length();
+}
+
+void Simulator::InterpretOPV_IVV(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_FVV(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_MVV(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_IVI(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_IVX(Instruction instr) {
+  switch (vsew()) {
+    case e8:
+      InterpretOPV_IVX<uint8_t>(instr);
+      break;
+    case e16:
+      InterpretOPV_IVX<uint16_t>(instr);
+      break;
+    case e32:
+      InterpretOPV_IVX<uint32_t>(instr);
+      break;
+    case e64:
+      InterpretOPV_IVX<uint64_t>(instr);
+      break;
+    default:
+      FATAL("Invalid SEW");
+  }
+}
+
+template <typename sew_t>
+void Simulator::InterpretOPV_IVX(Instruction instr) {
+  if (instr.vm()) UNIMPLEMENTED();
+  sew_t rs1 = get_xreg(instr.rs1());
+  sew_t* vs2 = ref_vreg<sew_t>(instr.vs2());
+  sew_t* vd = ref_vreg<sew_t>(instr.vd());
+  switch (instr.funct6()) {
+    case VADD:
+      for (uintx_t i = 0, n = vl_; i < n; i++) {
+        vd[i] = rs1 + vs2[i];
+      }
+      break;
+    case VMV:
+      for (uintx_t i = 0, n = vl_; i < n; i++) {
+        vd[i] = rs1;
+      }
+      break;
+    default:
+      IllegalInstruction(instr);
+  }
+}
+
+void Simulator::InterpretOPV_FVF(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_MVX(Instruction instr) {
+  IllegalInstruction(instr);
+}
+
+void Simulator::InterpretOPV_CFG(Instruction instr) {
+  if ((instr.encoding() & 0x80000000) == 0) {
+    uintx_t avl = get_xreg(instr.rs1());  // In elements.
+    intx_t vtype = instr.itype_imm();
+    uintx_t sew;
+    switch ((vtype >> 3) & 0b111) {
+      case 0b000: sew = 8; break;
+      case 0b001: sew = 16; break;
+      case 0b010: sew = 32; break;
+      case 0b011: sew = 64; break;
+      default:
+        FATAL("Invalid SEW");
+    }
+    intx_t lmul;
+    switch ((vtype >> 0) & 0b111) {
+      case 0b101: lmul = -8; break;
+      case 0b110: lmul = -4; break;
+      case 0b111: lmul = -2; break;
+      case 0b000: lmul = 1; break;
+      case 0b001: lmul = 2; break;
+      case 0b010: lmul = 4; break;
+      case 0b011: lmul = 8; break;
+      default:
+        FATAL("Invalid LMUL");
+    }
+    uintx_t vlmax;
+    if (lmul < 0) {
+      vlmax = VLEN / sew / -lmul;
+    } else {
+      vlmax = VLEN / sew * lmul;
+    }
+    if (instr.rs1() == ZERO && instr.rd() != ZERO) {
+      vl_ = vlmax;
+    } else if (instr.rs1() == ZERO) {
+      // Keep existing vl.
+    } else if (avl < vlmax) {
+      vl_ = avl;
+    } else {
+      vl_ = vlmax;
+    }
+    vtype_ = vtype;
+    set_xreg(instr.rd(), vl_);
+  } else {
+    IllegalInstruction(instr);
+  }
+}
+
 enum ControlStatusRegister {
+  // URW
   fflags = 0x001,
   frm = 0x002,
   fcsr = 0x003,
-
+  vstart = 0x008,
+  vxsat = 0x009,
+  vxrm = 0x00A,
+  vcsr = 0x00F,
   ssp = 0x011,
-
+  // URO
   cycle = 0xC00,
   time = 0xC01,
   instret = 0xC02,
+  vl = 0xC20,
+  vtype = 0xC21,
+  vlenb = 0xC22,
 #if XLEN == 32
   cycleh = 0xC80,
   timeh = 0xC81,
@@ -2935,6 +3203,12 @@ intx_t Simulator::CSRRead(uint16_t csr) {
       return 0;
     case instret:
       return instret_;
+    case vl:
+      return vl_;
+    case vtype:
+      return vtype_;
+    case vlenb:
+      return VLEN/8;
 #if XLEN == 32
     case cycleh:
       return (instret_ / 2) >> 32;

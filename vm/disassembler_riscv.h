@@ -90,6 +90,9 @@ class Disassembler {
   void DisassembleFNMADD(Instruction instr);
   void DisassembleFNMSUB(Instruction instr);
   void DisassembleOPFP(Instruction instr);
+  void DisassembleOPV(Instruction instr);
+  void DisassembleOPV_CFG(Instruction instr);
+  void DisassembleOPV_IVX(Instruction instr);
 
   void UnknownInstruction(Instruction instr);
   void UnknownInstruction(CInstruction instr);

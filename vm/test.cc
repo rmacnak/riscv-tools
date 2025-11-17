@@ -8382,6 +8382,247 @@ ASM_TEST(DoubleLessOrEqualQuiet, RV_G | RV_Zfa) {
   EXPECT_EQ(0, simulator.CallI(buffer, qNAN, -3.0));
 }
 
+ASM_TEST(VectorMemoryCopy, RV_GC | RV_V) {
+  Label loop;
+  __ Bind(&loop);
+  __ vsetvli(A4, A2, e8, m8, ta, ma);
+  __ vle8v(V0, Address(A1));
+  __ add(A1, A1, A4);
+  __ sub(A2, A2, A4);
+  __ vse8v(V0, Address(A0));
+  __ add(A0, A0, A4);
+  __ bnez(A2, &loop);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  0c367757 vsetvli a4, a2, e8, m8, ta, ma\n"
+      "  02058007 vle8.v v0, (a1)\n"
+      "      95ba add a1, a1, a4\n"
+      "      8e19 sub a2, a2, a4\n"
+      "  02050027 vse8.v v0, (a0)\n"
+      "      953a add a0, a0, a4\n"
+      "  fe0617e3 bnez a2, -18\n"
+      "      8082 ret\n");
+
+  intptr_t len = 1000;
+  uint8_t* src = reinterpret_cast<uint8_t*>(Memory::Allocate(len));
+  uint8_t* dst = reinterpret_cast<uint8_t*>(Memory::Allocate(len));
+  for (intptr_t i = 0; i < len; i++) {
+    src[i] = i & 0xFF;
+    dst[i] = 0xFF;
+  }
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(dst), Memory::ToGuest(src), len);
+
+  for (intptr_t i = 0; i < len; i++) {
+    EXPECT_EQ(i & 0xFF, src[i]);
+    EXPECT_EQ(i & 0xFF, dst[i]);
+  }
+
+  // AVL < VLEN
+  dst[0] = 0xFF;
+  simulator.Call(buffer, Memory::ToGuest(dst), Memory::ToGuest(src), 1);
+  EXPECT_EQ(0, dst[0]);
+
+  // AVL = 0
+  dst[0] = 0xFF;
+  simulator.Call(buffer, Memory::ToGuest(dst), Memory::ToGuest(src), 0);
+  EXPECT_EQ(0xFF, dst[0]);
+}
+
+ASM_TEST(VectorMemorySet8, RV_GC | RV_V) {
+  Label loop;
+  __ Bind(&loop);
+  __ vsetvli(A4, A2, e8, m8, ta, ma);
+  __ vmvvx(V0, A1);
+  __ sub(A2, A2, A4);
+  __ vse8v(V0, Address(A0));
+  __ add(A0, A0, A4);
+  __ bnez(A2, &loop);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  0c367757 vsetvli a4, a2, e8, m8, ta, ma\n"
+      "  5e05c057 vmv.v.x v0, a1\n"
+      "      8e19 sub a2, a2, a4\n"
+      "  02050027 vse8.v v0, (a0)\n"
+      "      953a add a0, a0, a4\n"
+      "  fe0618e3 bnez a2, -16\n"
+      "      8082 ret\n");
+
+  intptr_t len = 100;
+  uint8_t* dst = reinterpret_cast<uint8_t*>(Memory::Allocate(len * 1));
+  for (intptr_t i = 0; i < len; i++) {
+    dst[i] = 0;
+  }
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x12, len);
+
+  for (intptr_t i = 0; i < len; i++) {
+    EXPECT_EQ(0x12u, dst[i]);
+  }
+
+  // AVL < VLEN
+  dst[0] = 0;
+  dst[1] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x23, 1);
+  EXPECT_EQ(0x23u, dst[0]);
+  EXPECT_EQ(0u, dst[1]);
+
+  // AVL = 0
+  dst[0] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0xFF, 0);
+  EXPECT_EQ(0u, dst[0]);
+}
+
+ASM_TEST(VectorMemorySet16, RV_GC | RV_V) {
+  Label loop;
+  __ Bind(&loop);
+  __ vsetvli(A4, A2, e16, m8, ta, ma);
+  __ vmvvx(V0, A1);
+  __ sub(A2, A2, A4);
+  __ vse16v(V0, Address(A0));
+  __ slli(A4, A4, 1);
+  __ add(A0, A0, A4);
+  __ bnez(A2, &loop);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  0cb67757 vsetvli a4, a2, e16, m8, ta, ma\n"
+      "  5e05c057 vmv.v.x v0, a1\n"
+      "      8e19 sub a2, a2, a4\n"
+      "  02055027 vse16.v v0, (a0)\n"
+      "      0706 slli a4, a4, 0x1\n"
+      "      953a add a0, a0, a4\n"
+      "  fe0617e3 bnez a2, -18\n"
+      "      8082 ret\n");
+
+  intptr_t len = 100;
+  uint16_t* dst = reinterpret_cast<uint16_t*>(Memory::Allocate(len * 2));
+  for (intptr_t i = 0; i < len; i++) {
+    dst[i] = 0;
+  }
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x1234, len);
+
+  for (intptr_t i = 0; i < len; i++) {
+    EXPECT_EQ(0x1234u, dst[i]);
+  }
+
+  // AVL < VLEN
+  dst[0] = 0;
+  dst[1] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x2345, 1);
+  EXPECT_EQ(0x2345u, dst[0]);
+  EXPECT_EQ(0u, dst[1]);
+
+  // AVL = 0
+  dst[0] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0xFFFF, 0);
+  EXPECT_EQ(0u, dst[0]);
+}
+
+ASM_TEST(VectorMemorySet32, RV_GC | RV_V) {
+  Label loop;
+  __ Bind(&loop);
+  __ vsetvli(A4, A2, e32, m8, ta, ma);
+  __ vmvvx(V0, A1);
+  __ sub(A2, A2, A4);
+  __ vse32v(V0, Address(A0));
+  __ slli(A4, A4, 2);
+  __ add(A0, A0, A4);
+  __ bnez(A2, &loop);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  0d367757 vsetvli a4, a2, e32, m8, ta, ma\n"
+      "  5e05c057 vmv.v.x v0, a1\n"
+      "      8e19 sub a2, a2, a4\n"
+      "  02056027 vse32.v v0, (a0)\n"
+      "      070a slli a4, a4, 0x2\n"
+      "      953a add a0, a0, a4\n"
+      "  fe0617e3 bnez a2, -18\n"
+      "      8082 ret\n");
+
+  intptr_t len = 100;
+  uint32_t* dst = reinterpret_cast<uint32_t*>(Memory::Allocate(len * 4));
+  for (intptr_t i = 0; i < len; i++) {
+    dst[i] = 0;
+  }
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x12345678, len);
+
+  for (intptr_t i = 0; i < len; i++) {
+    EXPECT_EQ(0x12345678u, dst[i]);
+  }
+
+  // AVL < VLEN
+  dst[0] = 0;
+  dst[1] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x23456789, 1);
+  EXPECT_EQ(0x23456789u, dst[0]);
+  EXPECT_EQ(0u, dst[1]);
+
+  // AVL = 0
+  dst[0] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0xFFFFFFFF, 0);
+  EXPECT_EQ(0u, dst[0]);
+}
+
+#if XLEN >= 64
+ASM_TEST(VectorMemorySet64, RV_GC | RV_V) {
+  Label loop;
+  __ Bind(&loop);
+  __ vsetvli(A4, A2, e64, m8, ta, ma);
+  __ vmvvx(V0, A1);
+  __ sub(A2, A2, A4);
+  __ vse64v(V0, Address(A0));
+  __ slli(A4, A4, 3);
+  __ add(A0, A0, A4);
+  __ bnez(A2, &loop);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  0db67757 vsetvli a4, a2, e64, m8, ta, ma\n"
+      "  5e05c057 vmv.v.x v0, a1\n"
+      "      8e19 sub a2, a2, a4\n"
+      "  02057027 vse64.v v0, (a0)\n"
+      "      070e slli a4, a4, 0x3\n"
+      "      953a add a0, a0, a4\n"
+      "  fe0617e3 bnez a2, -18\n"
+      "      8082 ret\n");
+
+  intptr_t len = 100;
+  uint64_t* dst = reinterpret_cast<uint64_t*>(Memory::Allocate(len * 8));
+  for (intptr_t i = 0; i < len; i++) {
+    dst[i] = 0;
+  }
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x1234567812345678, len);
+
+  for (intptr_t i = 0; i < len; i++) {
+    EXPECT_EQ(0x1234567812345678u, dst[i]);
+  }
+
+  // AVL < VLEN
+  dst[0] = 0;
+  dst[1] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0x2345678923456789, 1);
+  EXPECT_EQ(0x2345678923456789u, dst[0]);
+  EXPECT_EQ(0u, dst[1]);
+
+  // AVL = 0
+  dst[0] = 0;
+  simulator.Call(buffer, Memory::ToGuest(dst), 0xFFFFFFFF, 0);
+  EXPECT_EQ(0u, dst[0]);
+}
+#endif
+
 ASM_TEST(LoadByteAcquire, RV_GC | RV_Zalasr) {
   __ lb(A0, Address(A1), std::memory_order_acquire);
   __ ret();
