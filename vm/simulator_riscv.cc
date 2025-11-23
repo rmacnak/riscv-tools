@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sys/mman.h>
 
+#include <cmath>
 #include <limits>
 
 #include "vm/assert.h"
@@ -2186,14 +2187,14 @@ void Simulator::InterpretFMADD(Instruction instr) {
       float rs1 = get_fregs(instr.frs1());
       float rs2 = get_fregs(instr.frs2());
       float rs3 = get_fregs(instr.frs3());
-      set_fregs(instr.frd(), (rs1 * rs2) + rs3);
+      set_fregs(instr.frd(), std::fma(rs1, rs2, rs3));
       break;
     }
     case F2_D: {
       double rs1 = get_fregd(instr.frs1());
       double rs2 = get_fregd(instr.frs2());
       double rs3 = get_fregd(instr.frs3());
-      set_fregd(instr.frd(), (rs1 * rs2) + rs3);
+      set_fregd(instr.frd(), std::fma(rs1, rs2, rs3));
       break;
     }
     default:
@@ -2208,14 +2209,14 @@ void Simulator::InterpretFMSUB(Instruction instr) {
       float rs1 = get_fregs(instr.frs1());
       float rs2 = get_fregs(instr.frs2());
       float rs3 = get_fregs(instr.frs3());
-      set_fregs(instr.frd(), (rs1 * rs2) - rs3);
+      set_fregs(instr.frd(), std::fma(rs1, rs2, -rs3));
       break;
     }
     case F2_D: {
       double rs1 = get_fregd(instr.frs1());
       double rs2 = get_fregd(instr.frs2());
       double rs3 = get_fregd(instr.frs3());
-      set_fregd(instr.frd(), (rs1 * rs2) - rs3);
+      set_fregd(instr.frd(), std::fma(rs1, rs2, -rs3));
       break;
     }
     default:
@@ -2230,14 +2231,14 @@ void Simulator::InterpretFNMSUB(Instruction instr) {
       float rs1 = get_fregs(instr.frs1());
       float rs2 = get_fregs(instr.frs2());
       float rs3 = get_fregs(instr.frs3());
-      set_fregs(instr.frd(), -(rs1 * rs2) + rs3);
+      set_fregs(instr.frd(), -std::fma(rs1, rs2, -rs3));
       break;
     }
     case F2_D: {
       double rs1 = get_fregd(instr.frs1());
       double rs2 = get_fregd(instr.frs2());
       double rs3 = get_fregd(instr.frs3());
-      set_fregd(instr.frd(), -(rs1 * rs2) + rs3);
+      set_fregd(instr.frd(), -std::fma(rs1, rs2, -rs3));
       break;
     }
     default:
@@ -2252,14 +2253,14 @@ void Simulator::InterpretFNMADD(Instruction instr) {
       float rs1 = get_fregs(instr.frs1());
       float rs2 = get_fregs(instr.frs2());
       float rs3 = get_fregs(instr.frs3());
-      set_fregs(instr.frd(), -(rs1 * rs2) - rs3);
+      set_fregs(instr.frd(), -std::fma(rs1, rs2, rs3));
       break;
     }
     case F2_D: {
       double rs1 = get_fregd(instr.frs1());
       double rs2 = get_fregd(instr.frs2());
       double rs3 = get_fregd(instr.frs3());
-      set_fregd(instr.frd(), -(rs1 * rs2) - rs3);
+      set_fregd(instr.frd(), -std::fma(rs1, rs2, rs3));
       break;
     }
     default:
