@@ -257,6 +257,8 @@ void Disassembler::DisassembleInstruction(CInstruction instr) {
         Print("sspush ra", instr, RV_Zicfiss | RV_C);
       } else if (instr.encoding() == C_SSPOPCHK) {
         Print("sspopchk t0", instr, RV_Zicfiss | RV_C);
+      } else if ((instr.encoding() & C_MOP_MASK) == C_MOP) {
+        Print("c.mop.'mopn", instr, RV_Zcmop);
       } else {
         UnknownInstruction(instr);
       }
@@ -1116,7 +1118,7 @@ void Disassembler::DisassembleSYSTEM(Instruction instr) {
           UnknownInstruction(instr);
       }
       break;
-    case F3_100: {
+    case MOP: {
       if ((instr.funct7() == SSPUSH) && (instr.rd() == ZERO) &&
           (instr.rs1() == ZERO) &&
           ((instr.rs2() == Register(1)) || (instr.rs2() == Register(5)))) {
@@ -1127,6 +1129,10 @@ void Disassembler::DisassembleSYSTEM(Instruction instr) {
         Print("sspopchk 'rs1", instr, RV_Zicfiss);
       } else if ((instr.funct12() == SSRDP) && (instr.rs1() == ZERO)) {
         Print("ssrdp 'rd", instr, RV_Zicfiss);
+      } else if ((instr.funct12() & MOP_R_MASK) == MOP_R) {
+        Print("mop.r.'moprn 'rd, 'rs1", instr, RV_Zimop);
+      } else if ((instr.funct7() & MOP_RR_MASK) == MOP_RR) {
+        Print("mop.rr.'moprrn 'rd, 'rs1, 'rs2", instr, RV_Zimop);
       } else {
         UnknownInstruction(instr);
       }
@@ -1998,6 +2004,12 @@ const char* Disassembler::PrintOption(const char* format, Instruction instr) {
       if ((succ & HartEffects::kWrite) != 0) buffer_.Print("w");
     }
     return format + 8;
+  } else if (STRING_STARTS_WITH(format, "moprn")) {
+    buffer_.Print("%" Pd, DecodeMoprn(instr.encoding()));
+    return format + 5;
+  } else if (STRING_STARTS_WITH(format, "moprrn")) {
+    buffer_.Print("%" Pd, DecodeMoprrn(instr.encoding()));
+    return format + 6;
   } else if (STRING_STARTS_WITH(format, "frd")) {
     buffer_.Print("%s", kFRegisterNames[instr.frd().encoding()]);
     return format + 3;
@@ -2190,6 +2202,9 @@ const char* Disassembler::PrintOption(const char* format, CInstruction instr) {
   } else if (STRING_STARTS_WITH(format, "shamt")) {
     buffer_.Print("0x%x", instr.shamt());
     return format + 5;
+  } else if (STRING_STARTS_WITH(format, "mopn")) {
+    buffer_.Print("%" Pd, DecodeCMopn(instr.encoding()));
+    return format + 4;
   }
 
   FATAL("Bad format %s\n", format);

@@ -125,10 +125,12 @@ bool CanRun(ExtensionSet extensions) {
 #if defined(USING_SIMULATOR)
   return true;
 #else
-  // Extensions not yet available in QEMU.
+  // Extensions not yet available in QEMU on CI.
   return !extensions.Includes(RV_Zalasr) &&
          !extensions.Includes(RV_Zabha) &&
          !extensions.Includes(RV_Zacas) &&
+         !extensions.Includes(RV_Zimop) &&
+         !extensions.Includes(RV_Zcmop) &&
          !extensions.Includes(RV_Zicfiss);
 #endif
 }
@@ -8827,7 +8829,49 @@ ASM_TEST(AmoCompareAndSwapQuadWord, RV_GC | RV_Zacas) {
 }
 #endif
 
-ASM_TEST(ShadowStack, RV_G | RV_Zicfiss) {
+ASM_TEST(MayBeOp_OneSource, RV_G | RV_Zimop) {
+  __ mopr(1, A0, A1);
+  __ mopr(31, A0, A1);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  81d5c573 mop.r.1 a0, a1\n"
+      "  cdf5c573 mop.r.31 a0, a1\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 2));
+}
+
+ASM_TEST(MayBeOp_TwoSource, RV_G | RV_Zimop) {
+  __ moprr(1, A0, A1, A2);
+  __ moprr(7, A0, A1, A2);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  86c5c573 mop.rr.1 a0, a1, a2\n"
+      "  cec5c573 mop.rr.7 a0, a1, a2\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(0, simulator.Call(buffer, 1, 2, 3));
+}
+
+ASM_TEST(CompressedMayBeOp, RV_GC | RV_Zcmop) {
+  __ cmop(11);
+  __ mv(A0, A1);  // A1=11
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "      6581 c.mop.11\n"
+      "      852e mv a0, a1\n"
+      "      8082 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(42, simulator.Call(buffer, 0, 42));
+}
+
+ASM_TEST(ShadowStack, RV_G | RV_Zicfiss | RV_Zimop) {
   Label f;
   __ sspush(RA);
   __ jal(RA2, &f);
@@ -8851,7 +8895,7 @@ ASM_TEST(ShadowStack, RV_G | RV_Zicfiss) {
   EXPECT_EQ(0, simulator.Call(buffer, 0));
 }
 
-ASM_TEST(CompressedShadowStack, RV_GC | RV_Zicfiss) {
+ASM_TEST(CompressedShadowStack, RV_GC | RV_Zicfiss | RV_Zimop | RV_Zcmop) {
   Label f;
   __ sspush(RA);
   __ jal(RA2, &f);
@@ -8899,7 +8943,7 @@ ASM_TEST(ShadowStackAmoSwapDoubleWord, RV_G | RV_Zicfiss) {
 }
 #endif  // XLEN >= 64
 
-ASM_TEST(ShadowStackLongJump, RV_G | RV_Zicfiss) {
+ASM_TEST(ShadowStackLongJump, RV_G | RV_Zicfiss | RV_Zimop) {
   Label nlr, func2, setjmp, longjmp, ss_disabled;
   __ sspush(RA);
   __ subi(SP, SP, 6 * kWordSize);
@@ -9215,6 +9259,10 @@ TEST_ENCODING(FRegister, FRd)
 TEST_ENCODING(FRegister, FRs1)
 TEST_ENCODING(FRegister, FRs2)
 TEST_ENCODING(FRegister, FRs3)
+TEST_ENCODING(VRegister, Vd)
+TEST_ENCODING(VRegister, Vs1)
+TEST_ENCODING(VRegister, Vs2)
+TEST_ENCODING(VRegister, Vs3)
 TEST_ENCODING(Funct2, Funct2)
 TEST_ENCODING(Funct3, Funct3)
 TEST_ENCODING(Funct5, Funct5)
@@ -9226,6 +9274,8 @@ TEST_ENCODING(intptr_t, JTypeImm)
 TEST_ENCODING(intptr_t, ITypeImm)
 TEST_ENCODING(intptr_t, STypeImm)
 TEST_ENCODING(intptr_t, UTypeImm)
+TEST_ENCODING(intptr_t, Moprn)
+TEST_ENCODING(intptr_t, Moprrn)
 
 TEST_ENCODING(Register, CRd)
 TEST_ENCODING(Register, CRs1)
@@ -9254,6 +9304,7 @@ TEST_ENCODING(intptr_t, CUImm)
 TEST_ENCODING(intptr_t, CI16Imm)
 TEST_ENCODING(intptr_t, CI4SPNImm)
 TEST_ENCODING(intptr_t, CShamt)
+TEST_ENCODING(intptr_t, CMopn)
 
 #undef TEST_ENCODING
 

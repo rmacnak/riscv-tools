@@ -781,6 +781,8 @@ void Simulator::Interpret(CInstruction instr) {
             FATAL("Corrupt control flow");
           }
         }
+      } else if ((instr.encoding() & C_MOP_MASK) == C_MOP) {
+        // May-be-op
       } else {
         IllegalInstruction(instr);
       }
@@ -1708,7 +1710,7 @@ void Simulator::InterpretSYSTEM(Instruction instr) {
           IllegalInstruction(instr);
       }
       break;
-    case F3_100: {
+    case MOP: {
       if ((instr.funct7() == SSPUSH) && (instr.rd() == ZERO) &&
           (instr.rs1() == ZERO) &&
           ((instr.rs2() == Register(1)) || (instr.rs2() == Register(5)))) {
@@ -1729,6 +1731,10 @@ void Simulator::InterpretSYSTEM(Instruction instr) {
         }
       } else if ((instr.funct12() == SSRDP) && (instr.rs1() == ZERO)) {
         set_xreg(instr.rd(), ss_enabled_ ? ssp_ : 0);
+      } else if ((instr.funct12() & MOP_R_MASK) == MOP_R) {
+        set_xreg(instr.rd(), 0);
+      } else if ((instr.funct7() & MOP_RR_MASK) == MOP_RR) {
+        set_xreg(instr.rd(), 0);
       } else {
         IllegalInstruction(instr);
       }
