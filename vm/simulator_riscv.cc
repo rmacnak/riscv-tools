@@ -191,22 +191,22 @@ void Simulator::PrintRegisters() {
 #elif XLEN == 64
   OS::Print("vtype: %16" Px64 "       ", vtype_);
 #endif
-  switch ((vtype_ >> 3) & 0b111) {
-    case 0b000: OS::Print("e8"); break;
-    case 0b001: OS::Print("e16"); break;
-    case 0b010: OS::Print("e32"); break;
-    case 0b011: OS::Print("e64"); break;
-       default: OS::Print("invalid sew"); break;
+  switch (vsew()) {
+    case e8: OS::Print("e8"); break;
+    case e16: OS::Print("e16"); break;
+    case e32: OS::Print("e32"); break;
+    case e64: OS::Print("e64"); break;
+    default: OS::Print("invalid sew"); break;
   }
-  switch ((vtype_ >> 0) & 0b111) {
-    case 0b101: OS::Print(", mf8"); break;
-    case 0b110: OS::Print(", mf4"); break;
-    case 0b111: OS::Print(", mf2"); break;
-    case 0b000: OS::Print(", m1"); break;
-    case 0b001: OS::Print(", m2"); break;
-    case 0b010: OS::Print(", m4"); break;
-    case 0b011: OS::Print(", m8"); break;
-       default: OS::Print(", invalid lmul"); break;
+  switch (vlmul()) {
+    case mf8: OS::Print(", mf8"); break;
+    case mf4: OS::Print(", mf4"); break;
+    case mf2: OS::Print(", mf2"); break;
+    case m1: OS::Print(", m1"); break;
+    case m2: OS::Print(", m2"); break;
+    case m4: OS::Print(", m4"); break;
+    case m8: OS::Print(", m8"); break;
+    default: OS::Print(", invalid lmul"); break;
   }
   if ((vtype_ & (1 << 6)) == 0) {
     OS::Print(", tu");
@@ -3090,22 +3090,22 @@ void Simulator::InterpretOPV_CFG(Instruction instr) {
     intx_t vtype = instr.itype_imm();
     uintx_t sew;
     switch ((vtype >> 3) & 0b111) {
-      case 0b000: sew = 8; break;
-      case 0b001: sew = 16; break;
-      case 0b010: sew = 32; break;
-      case 0b011: sew = 64; break;
+      case e8: sew = 8; break;
+      case e16: sew = 16; break;
+      case e32: sew = 32; break;
+      case e64: sew = 64; break;
       default:
         FATAL("Invalid SEW");
     }
     intx_t lmul;
     switch ((vtype >> 0) & 0b111) {
-      case 0b101: lmul = -8; break;
-      case 0b110: lmul = -4; break;
-      case 0b111: lmul = -2; break;
-      case 0b000: lmul = 1; break;
-      case 0b001: lmul = 2; break;
-      case 0b010: lmul = 4; break;
-      case 0b011: lmul = 8; break;
+      case mf8: lmul = -8; break;
+      case mf4: lmul = -4; break;
+      case mf2: lmul = -2; break;
+      case m1: lmul = 1; break;
+      case m2: lmul = 2; break;
+      case m4: lmul = 4; break;
+      case m8: lmul = 8; break;
       default:
         FATAL("Invalid LMUL");
     }

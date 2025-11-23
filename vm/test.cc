@@ -8401,7 +8401,7 @@ ASM_TEST(VectorMemoryCopy, RV_GC | RV_V) {
       "      8e19 sub a2, a2, a4\n"
       "  02050027 vse8.v v0, (a0)\n"
       "      953a add a0, a0, a4\n"
-      "  fe0617e3 bnez a2, -18\n"
+      "      f67d bnez a2, -18\n"
       "      8082 ret\n");
 
   intptr_t len = 1000;
@@ -8448,7 +8448,7 @@ ASM_TEST(VectorMemorySet8, RV_GC | RV_V) {
       "      8e19 sub a2, a2, a4\n"
       "  02050027 vse8.v v0, (a0)\n"
       "      953a add a0, a0, a4\n"
-      "  fe0618e3 bnez a2, -16\n"
+      "      fa65 bnez a2, -16\n"
       "      8082 ret\n");
 
   intptr_t len = 100;
@@ -8496,7 +8496,7 @@ ASM_TEST(VectorMemorySet16, RV_GC | RV_V) {
       "  02055027 vse16.v v0, (a0)\n"
       "      0706 slli a4, a4, 0x1\n"
       "      953a add a0, a0, a4\n"
-      "  fe0617e3 bnez a2, -18\n"
+      "      f67d bnez a2, -18\n"
       "      8082 ret\n");
 
   intptr_t len = 100;
@@ -8544,7 +8544,7 @@ ASM_TEST(VectorMemorySet32, RV_GC | RV_V) {
       "  02056027 vse32.v v0, (a0)\n"
       "      070a slli a4, a4, 0x2\n"
       "      953a add a0, a0, a4\n"
-      "  fe0617e3 bnez a2, -18\n"
+      "      f67d bnez a2, -18\n"
       "      8082 ret\n");
 
   intptr_t len = 100;
@@ -8593,7 +8593,7 @@ ASM_TEST(VectorMemorySet64, RV_GC | RV_V) {
       "  02057027 vse64.v v0, (a0)\n"
       "      070e slli a4, a4, 0x3\n"
       "      953a add a0, a0, a4\n"
-      "  fe0617e3 bnez a2, -18\n"
+      "      f67d bnez a2, -18\n"
       "      8082 ret\n");
 
   intptr_t len = 100;
