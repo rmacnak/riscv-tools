@@ -1195,6 +1195,9 @@ void Disassembler::DisassembleAMO(Instruction instr) {
     case WIDTH64:
       DisassembleAMO64(instr);
       break;
+    case WIDTH128:
+      DisassembleAMO128(instr);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1324,6 +1327,9 @@ void Disassembler::DisassembleAMO32(Instruction instr) {
     case SSAMOSWAP:
       Print("ssamoswap.w'order 'rd, 'rs2, ('rs1)", instr, RV_Zicfiss);
       break;
+    case AMOCAS:
+      Print("amocas.w'order 'rd, 'rs2, ('rs1)", instr, RV_Zacas);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1373,6 +1379,21 @@ void Disassembler::DisassembleAMO64(Instruction instr) {
       break;
     case SSAMOSWAP:
       Print("ssamoswap.d'order 'rd, 'rs2, ('rs1)", instr, RV_Zicfiss);
+      break;
+#endif
+    case AMOCAS:
+      Print("amocas.d'order 'rd, 'rs2, ('rs1)", instr, RV_Zacas);
+      break;
+    default:
+      UnknownInstruction(instr);
+  }
+}
+
+void Disassembler::DisassembleAMO128(Instruction instr) {
+  switch (instr.funct5()) {
+#if XLEN >= 64
+    case AMOCAS:
+      Print("amocas.q'order 'rd, 'rs2, ('rs1)", instr, RV_Zacas);
       break;
 #endif
     default:

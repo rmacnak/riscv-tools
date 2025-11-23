@@ -128,6 +128,7 @@ bool CanRun(ExtensionSet extensions) {
   // Extensions not yet available in QEMU.
   return !extensions.Includes(RV_Zalasr) &&
          !extensions.Includes(RV_Zabha) &&
+         !extensions.Includes(RV_Zacas) &&
          !extensions.Includes(RV_Zicfiss);
 #endif
 }
@@ -8754,6 +8755,77 @@ ASM_TEST(StoreDoubleWordRelease, RV_GC | RV_Zalasr) {
   EXPECT_EQ(-42, values[0]);
 }
 #endif  // XLEN >= 64
+
+ASM_TEST(AmoCompareAndSwapWord, RV_GC | RV_Zacas) {
+  __ lw(A1, Address(A0));
+  Label retry;
+  __ Bind(&retry);
+  __ addi(A2, A1, 1);
+  __ mv(A3, A1);
+  __ amocasw(A1, A2, Address(A0), std::memory_order_relaxed);
+  __ bne(A1, A3, &retry);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "      410c lw a1, 0(a0)\n"
+      "  00158613 addi a2, a1, 1\n"
+      "      86ae mv a3, a1\n"
+      "  28c525af amocas.w a1, a2, (a0)\n"
+      "  fed59be3 bne a1, a3, -10\n"
+      "      8082 ret\n");
+
+  int32_t* counter =
+      reinterpret_cast<int32_t*>(Memory::Allocate(sizeof(int32_t)));
+  *counter = 0;
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(1, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(2, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(3, *counter);
+}
+
+#if XLEN >= 64
+ASM_TEST(AmoCompareAndSwapDoubleWord, RV_GC | RV_Zacas) {
+  __ ld(A1, Address(A0));
+  Label retry;
+  __ Bind(&retry);
+  __ addi(A2, A1, 1);
+  __ mv(A3, A1);
+  __ amocasd(A1, A2, Address(A0), std::memory_order_relaxed);
+  __ bne(A1, A3, &retry);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "      610c ld a1, 0(a0)\n"
+      "  00158613 addi a2, a1, 1\n"
+      "      86ae mv a3, a1\n"
+      "  28c535af amocas.d a1, a2, (a0)\n"
+      "  fed59be3 bne a1, a3, -10\n"
+      "      8082 ret\n");
+
+  int64_t* counter =
+      reinterpret_cast<int64_t*>(Memory::Allocate(sizeof(int64_t)));
+  *counter = 0;
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(1, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(2, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(3, *counter);
+}
+
+ASM_TEST(AmoCompareAndSwapQuadWord, RV_GC | RV_Zacas) {
+  __ amocasq(T1, T3, Address(A0), std::memory_order_acq_rel);
+
+  EXPECT_DISASSEMBLY(
+      "  2fc5432f amocas.q.aqrl t1, t3, (a0)\n");
+}
+#endif
 
 ASM_TEST(ShadowStack, RV_G | RV_Zicfiss) {
   Label f;

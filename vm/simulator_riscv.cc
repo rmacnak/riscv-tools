@@ -1849,9 +1849,13 @@ void Simulator::InterpretAMO(Instruction instr) {
     case WIDTH64:
       InterpretAMO64(instr);
       break;
+    case WIDTH128:
+      InterpretAMO128(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
+  pc_ += instr.length();
 }
 
 // Note: This implementation does not give full LR/SC semantics because it
@@ -2003,6 +2007,19 @@ void Simulator::InterpretSTOREORDERED(Instruction instr) {
   atomic->store(value, instr.memory_order());
 }
 
+template <typename type>
+void Simulator::InterpretAMOCAS(Instruction instr) {
+  uintx_t addr = get_xreg(instr.rs1());
+  if ((addr & (sizeof(type) - 1)) != 0) {
+    FATAL("Misaligned atomic memory operation");
+  }
+  type expected = get_xreg(instr.rd());
+  type desired = get_xreg(instr.rs2());
+  std::atomic<type>* atomic = Memory::ToHost<std::atomic<type>>(addr);
+  atomic->compare_exchange_weak(expected, desired, instr.memory_order());
+  set_xreg(instr.rd(), expected);
+}
+
 void Simulator::InterpretAMO8(Instruction instr) {
   switch (instr.funct5()) {
     case AMOSWAP:
@@ -2041,7 +2058,6 @@ void Simulator::InterpretAMO8(Instruction instr) {
     default:
       IllegalInstruction(instr);
   }
-  pc_ += instr.length();
 }
 
 void Simulator::InterpretAMO16(Instruction instr) {
@@ -2082,7 +2098,6 @@ void Simulator::InterpretAMO16(Instruction instr) {
     default:
       IllegalInstruction(instr);
   }
-  pc_ += instr.length();
 }
 
 void Simulator::InterpretAMO32(Instruction instr) {
@@ -2126,10 +2141,12 @@ void Simulator::InterpretAMO32(Instruction instr) {
     case STOREORDERED:
       InterpretSTOREORDERED<int32_t>(instr);
       break;
+    case AMOCAS:
+      InterpretAMOCAS<int32_t>(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
-  pc_ += instr.length();
 }
 
 void Simulator::InterpretAMO64(Instruction instr) {
@@ -2174,11 +2191,30 @@ void Simulator::InterpretAMO64(Instruction instr) {
     case STOREORDERED:
       InterpretSTOREORDERED<int64_t>(instr);
       break;
+    case AMOCAS:
+      InterpretAMOCAS<int64_t>(instr);
+      break;
+#endif  // XLEN >= 64
+#if XLEN == 32
+    case AMOCAS:
+      UNIMPLEMENTED();
+      break;
+#endif
+    default:
+      IllegalInstruction(instr);
+  }
+}
+
+void Simulator::InterpretAMO128(Instruction instr) {
+  switch (instr.funct5()) {
+#if XLEN >= 64
+    case AMOCAS:
+      UNIMPLEMENTED();
+      break;
 #endif  // XLEN >= 64
     default:
       IllegalInstruction(instr);
   }
-  pc_ += instr.length();
 }
 
 void Simulator::InterpretFMADD(Instruction instr) {

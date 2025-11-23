@@ -83,6 +83,7 @@ class Disassembler {
   void DisassembleAMO16(Instruction instr);
   void DisassembleAMO32(Instruction instr);
   void DisassembleAMO64(Instruction instr);
+  void DisassembleAMO128(Instruction instr);
   void DisassembleLOADFP(Instruction instr);
   void DisassembleSTOREFP(Instruction instr);
   void DisassembleFMADD(Instruction instr);

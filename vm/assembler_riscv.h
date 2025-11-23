@@ -734,6 +734,16 @@ class Assembler {
   void sx(Register rs2, Address addr, std::memory_order o) { sq(rs2, adrr, o); }
 #endif
 
+  // ==== Zacas: Compare-and-swap ====
+  void amocasw(Register rd, Register rs2, Address addr,
+               std::memory_order order = std::memory_order_relaxed);
+  void amocasd(Register rd, Register rs2, Address addr,
+               std::memory_order order = std::memory_order_relaxed);
+#if XLEN >= 64
+  void amocasq(Register rd, Register rs2, Address addr,
+               std::memory_order order = std::memory_order_relaxed);
+#endif
+
  private:
   // ==== RV32/64C ====
   void c_lwsp(Register rd, Address addr);
