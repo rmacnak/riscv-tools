@@ -2113,6 +2113,16 @@ void Assembler::amocasq(Register rd, Register rs2, Address addr,
 }
 #endif
 
+void Assembler::wrsnto() {
+  ASSERT(Supports(RV_Zawrs));
+  EmitIType(WRS_NTO, ZERO, PRIV, ZERO, SYSTEM);
+}
+
+void Assembler::wrssto() {
+  ASSERT(Supports(RV_Zawrs));
+  EmitIType(WRS_STO, ZERO, PRIV, ZERO, SYSTEM);
+}
+
 void Assembler::c_lwsp(Register rd, Address addr) {
   ASSERT(rd != ZERO);
   ASSERT(addr.base() == SP);

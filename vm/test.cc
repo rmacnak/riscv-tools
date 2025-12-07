@@ -129,6 +129,7 @@ bool CanRun(ExtensionSet extensions) {
   return !extensions.Includes(RV_Zalasr) &&
          !extensions.Includes(RV_Zabha) &&
          !extensions.Includes(RV_Zacas) &&
+         !extensions.Includes(RV_Zawrs) &&
          !extensions.Includes(RV_Zimop) &&
          !extensions.Includes(RV_Zcmop) &&
          !extensions.Includes(RV_Zicfiss);
@@ -8828,6 +8829,30 @@ ASM_TEST(AmoCompareAndSwapQuadWord, RV_GC | RV_Zacas) {
       "  2fc5432f amocas.q.aqrl t1, t3, (a0)\n");
 }
 #endif
+
+ASM_TEST(WaitOnReservationSet_NoTimeout, RV_GC | RV_Zawrs) {
+  __ wrsnto();
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  00d00073 wrs.nto\n"
+      "      8082 ret\n");
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer);
+}
+
+ASM_TEST(WaitOnReservationSet_ShortTimeout, RV_GC | RV_Zawrs) {
+  __ wrssto();
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  01d00073 wrs.sto\n"
+      "      8082 ret\n");
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer);
+}
 
 ASM_TEST(MayBeOp_OneSource, RV_G | RV_Zimop) {
   __ mopr(1, A0, A1);

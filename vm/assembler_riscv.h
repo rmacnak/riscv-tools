@@ -750,6 +750,10 @@ class Assembler {
                std::memory_order order = std::memory_order_relaxed);
 #endif
 
+  // ==== Zawrs: Wait on reservation set ====
+  void wrsnto();
+  void wrssto();
+
  private:
   // ==== RV32/64C ====
   void c_lwsp(Register rd, Address addr);

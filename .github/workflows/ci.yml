@@ -13,7 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies
-        run: sudo apt install g++ g++-riscv64-linux-gnu qemu-user
+        run: |
+          sudo apt update
+          sudo apt install g++ g++-riscv64-linux-gnu qemu-user
       - name: Build Host 32
         run: |
           rm -rf out

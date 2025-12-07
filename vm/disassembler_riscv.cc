@@ -1114,6 +1114,12 @@ void Disassembler::DisassembleSYSTEM(Instruction instr) {
         case EBREAK:
           Print("ebreak", instr, RV_I);
           break;
+        case WRS_NTO:
+          Print("wrs.nto", instr, RV_Zawrs);
+          break;
+        case WRS_STO:
+          Print("wrs.sto", instr, RV_Zawrs);
+          break;
         default:
           UnknownInstruction(instr);
       }

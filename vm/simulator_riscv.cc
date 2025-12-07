@@ -1706,6 +1706,9 @@ void Simulator::InterpretSYSTEM(Instruction instr) {
         case EBREAK:
           FATAL("Encountered EBREAK");
           break;
+        case WRS_NTO:
+        case WRS_STO:
+          break;
         default:
           IllegalInstruction(instr);
       }

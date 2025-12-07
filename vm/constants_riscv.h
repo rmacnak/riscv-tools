@@ -320,6 +320,9 @@ enum Funct12 {
   ECALL = 0,
   EBREAK = 1,
 
+  WRS_NTO = 0x0D,
+  WRS_STO = 0x1D,
+
   MOP_R_MASK = 0b101100111100,
   MOP_R = 0b100000011100,
   SSPOPCHK = 0b110011011100,
@@ -1395,21 +1398,22 @@ static constexpr Extension RV_C(6);  // Compressed instructions
 static constexpr ExtensionSet RV_G = RV_I | RV_M | RV_A | RV_F | RV_D;
 static constexpr ExtensionSet RV_GC = RV_G | RV_C;
 static constexpr ExtensionSet RVA20 = RV_GC;
-static constexpr Extension RV_Zba(8);  // Address generation
-static constexpr Extension RV_Zbb(9);  // Basic bit-manipulation
-static constexpr Extension RV_Zbs(10);  // Single-bit instructions
+static constexpr Extension RV_Zba(7);  // Address generation
+static constexpr Extension RV_Zbb(8);  // Basic bit-manipulation
+static constexpr Extension RV_Zbs(9);  // Single-bit instructions
 static constexpr ExtensionSet RV_B = RV_Zba | RV_Zbb | RV_Zbs;
 static constexpr ExtensionSet RV_GCB = RV_GC | RV_B;
 static constexpr ExtensionSet RVA22 = RV_GCB;
-static constexpr Extension RV_V(11);  // Vector
-static constexpr Extension RV_Zbc(12);  // Carry-less multiplication
-static constexpr Extension RV_Zicond(13);  // Integer conditional operations
-static constexpr Extension RV_Zcb(14);  // More compressed instructions
-static constexpr Extension RV_Zfa(15);  // Load-acquire, store-release
-static constexpr Extension RV_Zimop(16);  // May-be-operations
-static constexpr Extension RV_Zcmop(17);  // Compressed may-be-operations
+static constexpr Extension RV_V(10);  // Vector
+static constexpr Extension RV_Zbc(11);  // Carry-less multiplication
+static constexpr Extension RV_Zicond(12);  // Integer conditional operations
+static constexpr Extension RV_Zcb(13);  // More compressed instructions
+static constexpr Extension RV_Zfa(14);  // Load-acquire, store-release
+static constexpr Extension RV_Zimop(15);  // May-be-operations
+static constexpr Extension RV_Zcmop(16);  // Compressed may-be-operations
+static constexpr Extension RV_Zawrs(17);  // Wait on reservation set
 static constexpr ExtensionSet RVA23 =
-    RVA22 | RV_V | RV_Zicond | RV_Zcb | RV_Zfa | RV_Zimop | RV_Zcmop;
+    RVA22 | RV_V | RV_Zicond | RV_Zcb | RV_Zfa | RV_Zimop | RV_Zcmop | RV_Zawrs;
 static constexpr Extension RV_Zabha(18);  // Byte and halfword AMOs
 static constexpr Extension RV_Zicfiss(19);  // Shadow stack
 static constexpr Extension RV_Zalasr(20);  // Load-acquire store-release
