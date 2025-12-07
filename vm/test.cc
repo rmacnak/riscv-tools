@@ -2397,6 +2397,24 @@ ASM_TEST(LoadReserveStoreConditionalWord_Failure, RV_G) {
   EXPECT_EQ(0b1100, *value);
 }
 
+ASM_TEST(LoadReserveStoreConditionalWord_Failure2, RV_G) {
+  __ subi(A2, SP, 8);
+  __ lrw(A1, Address(A2));
+  __ scw(A0, A1, Address(A2));  // May fail or succeed.
+  __ scw(A0, A1, Address(A2));  // Must fail.
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  ff810613 addi a2, sp, -8\n"
+      "  100625af lr.w a1, (a2)\n"
+      "  18b6252f sc.w a0, a1, (a2)\n"
+      "  18b6252f sc.w a0, a1, (a2)\n"
+      "  00008067 ret\n");
+
+  void* buffer = assembler.buffer();
+  EXPECT_EQ(true, simulator.Call(buffer) != 0);
+}
+
 ASM_TEST(AmoSwapWord, RV_G) {
   __ amoswapw(A0, A1, Address(A0));
   __ ret();

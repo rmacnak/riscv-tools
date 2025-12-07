@@ -1890,6 +1890,7 @@ void Simulator::InterpretSC(Instruction instr) {
   }
   std::atomic<type>* atomic = Memory::ToHost<std::atomic<type>>(addr);
   if (addr != reserved_address_) {
+    reserved_address_ = 0;
     set_xreg(instr.rd(), 1);
     return;
   }
@@ -1898,6 +1899,7 @@ void Simulator::InterpretSC(Instruction instr) {
   bool success =
       atomic->compare_exchange_strong(expected, desired, instr.memory_order());
   set_xreg(instr.rd(), success ? 0 : 1);
+  reserved_address_ = 0;
 }
 
 template <typename type>
