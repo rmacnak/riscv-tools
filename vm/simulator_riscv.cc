@@ -2066,6 +2066,9 @@ void Simulator::InterpretAMO8(Instruction instr) {
     case STOREORDERED:
       InterpretSTOREORDERED<int8_t>(instr);
       break;
+    case AMOCAS:
+      InterpretAMOCAS<int8_t>(instr);
+      break;
     default:
       IllegalInstruction(instr);
   }
@@ -2105,6 +2108,9 @@ void Simulator::InterpretAMO16(Instruction instr) {
       break;
     case STOREORDERED:
       InterpretSTOREORDERED<int16_t>(instr);
+      break;
+    case AMOCAS:
+      InterpretAMOCAS<int16_t>(instr);
       break;
     default:
       IllegalInstruction(instr);

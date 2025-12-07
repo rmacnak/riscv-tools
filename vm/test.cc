@@ -8777,6 +8777,68 @@ ASM_TEST(StoreDoubleWordRelease, RV_GC | RV_Zalasr) {
 }
 #endif  // XLEN >= 64
 
+ASM_TEST(AmoCompareAndSwapByte, RV_GC | RV_Zacas | RV_Zabha) {
+  __ lb(A1, Address(A0));
+  Label retry;
+  __ Bind(&retry);
+  __ addi(A2, A1, 1);
+  __ mv(A3, A1);
+  __ amocasb(A1, A2, Address(A0), std::memory_order_relaxed);
+  __ bne(A1, A3, &retry);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  00050583 lb a1, 0(a0)\n"
+      "  00158613 addi a2, a1, 1\n"
+      "      86ae mv a3, a1\n"
+      "  28c505af amocas.b a1, a2, (a0)\n"
+      "  fed59be3 bne a1, a3, -10\n"
+      "      8082 ret\n");
+
+  int8_t* counter =
+      reinterpret_cast<int8_t*>(Memory::Allocate(sizeof(int8_t)));
+  *counter = 0;
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(1, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(2, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(3, *counter);
+}
+
+ASM_TEST(AmoCompareAndSwapHalfWord, RV_GC | RV_Zacas | RV_Zabha) {
+  __ lh(A1, Address(A0));
+  Label retry;
+  __ Bind(&retry);
+  __ addi(A2, A1, 1);
+  __ mv(A3, A1);
+  __ amocash(A1, A2, Address(A0), std::memory_order_relaxed);
+  __ bne(A1, A3, &retry);
+  __ ret();
+
+  EXPECT_DISASSEMBLY(
+      "  00051583 lh a1, 0(a0)\n"
+      "  00158613 addi a2, a1, 1\n"
+      "      86ae mv a3, a1\n"
+      "  28c515af amocas.h a1, a2, (a0)\n"
+      "  fed59be3 bne a1, a3, -10\n"
+      "      8082 ret\n");
+
+  int16_t* counter =
+      reinterpret_cast<int16_t*>(Memory::Allocate(sizeof(int16_t)));
+  *counter = 0;
+
+  void* buffer = assembler.buffer();
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(1, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(2, *counter);
+  simulator.Call(buffer, Memory::ToGuest(counter));
+  EXPECT_EQ(3, *counter);
+}
+
 ASM_TEST(AmoCompareAndSwapWord, RV_GC | RV_Zacas) {
   __ lw(A1, Address(A0));
   Label retry;

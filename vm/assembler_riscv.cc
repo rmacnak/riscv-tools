@@ -2082,6 +2082,20 @@ void Assembler::sd(Register rs2, Address addr, std::memory_order order) {
 }
 #endif  // XLEN >= 64
 
+void Assembler::amocasb(Register rd, Register rs2, Address addr,
+                        std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT(Supports(RV_Zacas | RV_Zabha));
+  EmitRType(AMOCAS, order, rs2, addr.base(), WIDTH8, rd, AMO);
+}
+
+void Assembler::amocash(Register rd, Register rs2, Address addr,
+                        std::memory_order order) {
+  ASSERT(addr.offset() == 0);
+  ASSERT(Supports(RV_Zacas | RV_Zabha));
+  EmitRType(AMOCAS, order, rs2, addr.base(), WIDTH16, rd, AMO);
+}
+
 void Assembler::amocasw(Register rd, Register rs2, Address addr,
                         std::memory_order order) {
   ASSERT(addr.offset() == 0);

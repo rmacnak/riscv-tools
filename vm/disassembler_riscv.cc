@@ -1250,6 +1250,9 @@ void Disassembler::DisassembleAMO8(Instruction instr) {
     case STOREORDERED:
       Print("sb'order 'rs2, ('rs1)", instr, RV_Zalasr);
       break;
+    case AMOCAS:
+      Print("amocas.b'order 'rd, 'rs2, ('rs1)", instr, RV_Zacas | RV_Zabha);
+      break;
     default:
       UnknownInstruction(instr);
   }
@@ -1289,6 +1292,9 @@ void Disassembler::DisassembleAMO16(Instruction instr) {
       break;
     case STOREORDERED:
       Print("sh'order 'rs2, ('rs1)", instr, RV_Zalasr);
+      break;
+    case AMOCAS:
+      Print("amocas.h'order 'rd, 'rs2, ('rs1)", instr, RV_Zacas | RV_Zabha);
       break;
     default:
       UnknownInstruction(instr);
