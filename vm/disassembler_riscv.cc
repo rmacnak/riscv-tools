@@ -2009,11 +2009,13 @@ const char* Disassembler::PrintOption(const char* format, Instruction instr) {
       if ((pred & HartEffects::kOutput) != 0) buffer_.Print("o");
       if ((pred & HartEffects::kRead) != 0) buffer_.Print("r");
       if ((pred & HartEffects::kWrite) != 0) buffer_.Print("w");
+      if (pred == 0) buffer_.Print("0");
       buffer_.Print(",");
       if ((succ & HartEffects::kInput) != 0) buffer_.Print("i");
       if ((succ & HartEffects::kOutput) != 0) buffer_.Print("o");
       if ((succ & HartEffects::kRead) != 0) buffer_.Print("r");
       if ((succ & HartEffects::kWrite) != 0) buffer_.Print("w");
+      if (succ == 0) buffer_.Print("0");
     }
     return format + 8;
   } else if (STRING_STARTS_WITH(format, "moprn")) {

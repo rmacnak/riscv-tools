@@ -333,8 +333,9 @@ class Simulator {
   void InterpretOPV_FVF(Instruction instr);
   void InterpretOPV_MVX(Instruction instr);
   void InterpretOPV_CFG(Instruction instr);
-  void IllegalInstruction(Instruction instr);
-  void IllegalInstruction(CInstruction instr);
+  [[noreturn]] void IllegalInstruction(Instruction instr);
+  [[noreturn]] void IllegalInstruction(CInstruction instr);
+  [[noreturn]] void Fault(const char* message);
 
   template <typename type>
   type MemoryRead(uintx_t addr, Register base);
